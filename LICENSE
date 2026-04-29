@@ -1,0 +1,372 @@
+Open ICL License
+Version 1.0.0
+
+Copyright (c) 2026 Itri Cloud Labs
+
+This Open ICL License, Version 1.0.0, is a source-available,
+sale-restricted software license. It permits reading, using, copying,
+modifying, forking, and redistributing the Software only under the terms
+below. It is not an Open Source Initiative approved license because it
+restricts selling, licensing for a fee, and paid access to the Software.
+
+By exercising any permission granted by this License, You accept and agree
+to all of its terms. If You do not agree to this License, You may not use,
+copy, modify, fork, distribute, or make the Software available to others.
+
+1. Definitions
+
+1.1. "License" means this Open ICL License, Version 1.0.0.
+
+1.2. "Licensor" means the copyright holder or entity that applies this
+License to the Software.
+
+1.3. "You" or "Your" means any individual or legal entity exercising
+permissions under this License.
+
+1.4. "Software" means the work of authorship, including source code,
+object code, documentation, assets, configuration, build files, and any
+other material to which the Licensor has applied this License.
+
+1.5. "Source Form" means the preferred form of the Software for making
+modifications.
+
+1.6. "Object Form" means any form of the Software that is not Source Form,
+including compiled code, bundled code, minified code, packaged binaries,
+container images, installers, and archives intended for execution or use.
+
+1.7. "Modification" means any change, adaptation, translation, extension,
+addition, deletion, rearrangement, or other alteration of the Software,
+whether in Source Form or Object Form.
+
+1.8. "Modified Version" means the Software, or any portion of it, with one
+or more Modifications.
+
+1.9. "Fork" means any copy, clone, branch, derivative repository, or other
+separate development line of the Software, whether public or private. A
+Fork becomes a "Redistributed Fork" when it is Distributed or otherwise
+made available to any third party, including through a public repository.
+
+1.10. "Distribute" means to share, publish, provide, convey, transfer,
+mirror, upload, host, package, release, or otherwise make the Software or a
+Modified Version available to any third party. Distribution includes making
+a repository public.
+
+1.11. "Network Use" means making the functionality of the Software or a
+Modified Version available for use by third parties over a network,
+including through a hosted service, web service, API, terminal gateway,
+remote shell, software-as-a-service offering, or similar remote access
+method.
+
+1.12. "Corresponding Source" means the complete Source Form needed to
+inspect, modify, build, install, and run the Software or Modified Version.
+Corresponding Source includes build scripts, package manifests,
+configuration files, interface definitions, generated source files when
+they are required for modification, and documentation reasonably necessary
+to reproduce the distributed or network-accessible version. Corresponding
+Source does not include generally available system libraries or third-party
+dependencies that are not controlled by You, provided those dependencies
+are clearly identified and available under their own licenses.
+
+1.13. "Project Marks" means the names, marks, logos, trade dress, product
+names, service names, domain names, social handles, package names, binary
+names, and branding associated with the Licensor or the original project,
+including "OpenStudy", "openstudy", "Itri Cloud", and "Itri Cloud Labs".
+
+1.14. "Permitted Purpose" means any purpose that does not involve a
+Commercial Sale. Permitted Purpose includes personal use, educational use,
+research use, nonprofit use, government use, and internal business use.
+Internal business use is permitted even when performed by or for a
+for-profit person or organization, provided the Software or Modified Version
+itself is not sold, licensed for a fee, rented, leased, provided as paid
+access, or otherwise monetized as described in Section 1.15.
+
+1.15. "Commercial Sale" means selling, licensing for a fee, renting,
+leasing, offering paid access to, or otherwise monetizing the Software or a
+Modified Version itself. Commercial Sale includes, without limitation, paid
+distribution, paid hosted access, paid software-as-a-service access, paid
+API access to the Software, paid subscriptions for the Software, app store
+sales, marketplace sales, selling modified versions, selling packaged
+copies, or making the Software a named feature of a paid product or paid
+service. Commercial Sale does not include internal use that supports a
+business's unrelated commercial activities, as long as the Software or
+Modified Version itself is not sold, licensed for a fee, rented, leased,
+provided as paid access, or distributed in exchange for commercial
+consideration.
+
+2. Grant of Copyright License
+
+Subject to all terms and conditions of this License, the Licensor grants You
+a worldwide, royalty-free, non-exclusive, non-sublicensable license to do
+the following solely for Permitted Purposes:
+
+2.1. use and run the Software;
+
+2.2. study and inspect the Software;
+
+2.3. copy the Software;
+
+2.4. modify the Software and create Modified Versions;
+
+2.5. reproduce and Distribute the Software and Modified Versions, but only
+as expressly allowed by this License;
+
+2.6. make the Software or Modified Versions available through Network Use,
+but only as expressly allowed by this License; and
+
+2.7. provide copies to recipients, who receive their permissions directly
+under this License.
+
+All rights not expressly granted by this License are reserved by the
+Licensor.
+
+3. Commercial Sale Limitation
+
+3.1. You may exercise the permissions in this License only for
+Permitted Purposes.
+
+3.2. You may not use, copy, modify, Distribute, provide Network Use of, or
+otherwise exploit the Software or any Modified Version for a Commercial
+Sale without a separate written commercial license from the Licensor.
+
+3.3. Internal use is permitted. You may use the Software internally for
+evaluation, development, operations, research, automation, training,
+security review, or other internal purposes, including inside a for-profit
+business, as long as You do not engage in a Commercial Sale.
+
+3.4. Charging no more than the direct, reasonable cost of physical media,
+bandwidth, or file hosting used solely to share the Software does not, by
+itself, create a Commercial Sale. Charging for access to the Software,
+hosting the Software as a paid service, selling packaged copies, selling
+modified versions, or bundling the Software as a named paid feature of a
+product or service is a Commercial Sale.
+
+3.5. Paid support, consulting, training, or customization services are not a
+Commercial Sale merely because they refer to the Software, provided access
+to the Software remains available under this License and the Software or
+Modified Version itself is not sold, licensed for a fee, rented, leased, or
+provided as paid access.
+
+4. Conditions for All Copies and Uses
+
+You must comply with all of the following conditions:
+
+4.1. You must keep intact all copyright notices, license notices, attribution
+notices, and disclaimer notices included with the Software.
+
+4.2. You must include a complete copy of this License with every copy of the
+Software or Modified Version that You Distribute.
+
+4.3. You must not misrepresent the origin of the Software or any Modified
+Version.
+
+4.4. You must not imply that the Licensor endorses You, Your Fork, Your
+Modified Version, or Your use of the Software.
+
+4.5. You must comply with applicable laws, regulations, export controls, and
+third-party terms that apply to Your use of the Software.
+
+4.6. You must not remove, obscure, or alter notices of this License except
+to add truthful notices describing Your own Modifications.
+
+4.7. You must not impose legal terms or technological measures that prevent
+recipients from exercising the rights this License grants them.
+
+5. Distribution, Forks, and Source Availability
+
+5.1. You may Distribute unmodified copies of the Software for Permitted
+Purposes if You comply with this License.
+
+5.2. You may Distribute a Modified Version or Redistributed Fork only if all
+of the following conditions are met:
+
+(a) the Distribution is for a Permitted Purpose;
+
+(b) the Modified Version or Redistributed Fork is licensed as a whole under
+this License;
+
+(c) You provide the complete Corresponding Source publicly and without
+charge;
+
+(d) the Corresponding Source is available from the same repository, release
+page, package page, website, or a clearly identified public URL;
+
+(e) access to the Corresponding Source does not require payment, purchase,
+registration, approval, private invitation, or acceptance of additional
+terms that conflict with this License;
+
+(f) You prominently state that You modified the Software and identify the
+nature and date of Your material changes;
+
+(g) You preserve this License and all required notices; and
+
+(h) You comply with the renaming and branding requirements in Section 6.
+
+5.3. If You Distribute Object Form of the Software or a Modified Version,
+You must also provide the Corresponding Source under Section 5.2.
+
+5.4. If You provide Network Use of a Modified Version, that Network Use is
+treated as Distribution of the Modified Version. You must provide the
+complete Corresponding Source to all users of the network-accessible
+version under Section 5.2.
+
+5.5. You must keep the Corresponding Source available for as long as You
+Distribute or provide Network Use of the Software or Modified Version, and
+for at least twelve months after Your last Distribution or Network Use.
+
+5.6. You may not relicense the Software, a Modified Version, or a
+Redistributed Fork under another license. You may add Your own copyright
+notice for Your original Modifications, but those Modifications must remain
+licensed under this License when Distributed or made available through
+Network Use.
+
+5.7. This License does not require independent works that merely communicate
+with the Software at arm's length to be licensed under this License. If You
+combine the Software with other material, this License applies to the
+Software and to any Modifications of the Software, but does not apply to
+independent components that are separate works and not derivative of the
+Software.
+
+6. Fork Renaming and Branding
+
+6.1. Before You Distribute or publicly host a Fork, Modified Version, or
+Redistributed Fork, You must rename it so that it is clearly distinguishable
+from the original project.
+
+6.2. You may not Distribute or publicly host a Fork, Modified Version, or
+Redistributed Fork using the name "OpenStudy", "openstudy", or any name
+confusingly similar to the original project name.
+
+6.3. For any Redistributed Fork, You must change user-facing names,
+repository names, package names, binary names, service names, and interface
+branding that would reasonably cause users to believe Your version is the
+official project.
+
+6.4. You must not use the Project Marks except as necessary to preserve
+copyright, attribution, and license notices, or to make a truthful statement
+such as "forked from OpenStudy" or "based on OpenStudy".
+
+6.5. You must not use the Project Marks in a way that suggests endorsement,
+sponsorship, affiliation, or official status.
+
+7. No Trademark License
+
+This License grants copyright permissions only. It does not grant any right,
+title, license, or permission to use any trademark, service mark, trade
+name, logo, domain name, social handle, product name, or other Project Mark,
+except for the limited truthful attribution allowed by Section 6.4.
+
+8. Third-Party Software and External Services
+
+8.1. Third-party dependencies, libraries, models, APIs, SDKs, package
+registries, hosting platforms, and external services are licensed or
+provided under their own terms. This License does not modify those terms.
+
+8.2. You are responsible for ensuring that Your use of the Software complies
+with the terms of any third-party provider, model provider, API provider,
+package, service, or platform used with the Software.
+
+8.3. The Licensor does not grant rights to any third-party material except
+to the extent the Licensor has the legal power to do so.
+
+9. Contributions and Project Governance
+
+9.1. This License does not create any right to submit contributions to the
+official project, to have contributions reviewed, or to have contributions
+accepted.
+
+9.2. The Licensor may decline, ignore, close, or reject any contribution,
+issue, pull request, proposal, or request at its sole discretion.
+
+9.3. If You intentionally submit a contribution to the Licensor for possible
+inclusion in the Software, You grant the Licensor a worldwide,
+royalty-free, perpetual, irrevocable, non-exclusive, transferable, and
+sublicensable license to use, copy, modify, merge, publish, distribute,
+relicense, and otherwise exploit that contribution for any purpose, unless
+You and the Licensor have signed a separate written agreement stating
+otherwise.
+
+9.4. You represent that You have the right to submit any contribution You
+provide and that Your contribution does not knowingly infringe any third
+party's rights.
+
+10. Patent License
+
+10.1. Subject to the terms of this License, each Licensor grants You a
+worldwide, royalty-free, non-exclusive patent license under patent claims
+that the Licensor can license and that are necessarily infringed by using,
+copying, modifying, or distributing the Software as permitted by this
+License.
+
+10.2. The patent license in Section 10.1 applies only to Permitted Purposes
+and only to the Software or contributions provided by that Licensor.
+
+10.3. If You initiate or maintain a patent claim alleging that the Software
+or a contribution incorporated into the Software infringes a patent, Your
+rights under this License terminate immediately.
+
+11. Termination and Reinstatement
+
+11.1. This License remains in effect for as long as You comply with its
+terms.
+
+11.2. Your rights under this License terminate automatically if You violate
+any term of this License.
+
+11.3. If this is Your first violation of this License and You cure the
+violation within thirty days after You become aware of it or receive notice
+of it, Your rights are reinstated automatically as of the date the violation
+is cured.
+
+11.4. Repeated violations, uncured violations, Commercial Sale without
+permission, or false attribution may result in permanent termination unless
+the Licensor expressly reinstates Your rights in writing.
+
+11.5. Termination does not affect licenses validly granted to downstream
+recipients before termination, provided those recipients remain in
+compliance with this License.
+
+11.6. Sections intended to survive termination, including Sections 1, 3, 4,
+6, 7, 8, 9, 10.3, 11, 12, 13, 14, and 15, survive termination.
+
+12. Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+NON-INFRINGEMENT, SECURITY, ACCURACY, AVAILABILITY, OR ERROR-FREE
+OPERATION. YOU USE THE SOFTWARE AT YOUR OWN RISK.
+
+13. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR, COPYRIGHT
+HOLDERS, AUTHORS, CONTRIBUTORS, AND MAINTAINERS WILL NOT BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL,
+OR OTHER DAMAGES ARISING OUT OF OR RELATING TO THE SOFTWARE OR THIS
+LICENSE, INCLUDING WITHOUT LIMITATION LOSS OF DATA, LOSS OF PROFITS,
+BUSINESS INTERRUPTION, SECURITY INCIDENTS, SERVICE FAILURES, OR PROCUREMENT
+OF SUBSTITUTE GOODS OR SERVICES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGES.
+
+14. Interpretation
+
+14.1. If any provision of this License is held unenforceable, the remaining
+provisions remain in effect. The unenforceable provision will be interpreted
+or reformed only to the minimum extent necessary to make it enforceable
+while preserving its original intent as closely as possible.
+
+14.2. Failure by the Licensor to enforce any provision of this License is
+not a waiver of the right to enforce that provision later.
+
+14.3. Headings are for convenience only and do not affect interpretation.
+
+14.4. This License is the entire permission granted by the Licensor for the
+Software. Any use outside this License requires a separate written agreement
+with the Licensor.
+
+15. Commercial Sale Licensing
+
+Commercial Sale is not permitted under this License. Internal use, including
+internal use by or for a for-profit organization, is permitted. To sell,
+license for a fee, rent, lease, provide paid access to, or otherwise
+monetize the Software or a Modified Version itself, a separate written
+license must be obtained from the Licensor.

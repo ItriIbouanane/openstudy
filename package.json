@@ -1,0 +1,37 @@
+{
+  "name": "openstudy",
+  "version": "0.1.0",
+  "description": "A terminal UI application inspired by OpenCode for software engineering tasks",
+  "main": "dist/index.js",
+  "bin": {
+    "openstudy": "dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.tsx",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "reset": "node scripts/reset-config.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tui",
+    "cli",
+    "terminal",
+    "opencode",
+    "ink"
+  ],
+  "author": "",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "dependencies": {
+    "@openai/codex-sdk": "^0.125.0",
+    "ink": "^7.0.1",
+    "react": "^19.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
