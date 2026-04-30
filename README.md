@@ -1,5 +1,22 @@
 # OpenStudy
 
+> [!IMPORTANT]
+> **OpenStudy licensing roadmap**
+> 
+> OpenStudy is currently released under the **Open ICL License** to allow rapid development in its early stage.
+> 
+> It will transition to a fully open source license (**AGPL v3**) once the project reaches maturity.
+> 
+> This transition will occur when **ALL** of the following milestones are reached:
+> 
+> - Version **1.0** is released  
+> - **2,000 weekly downloads** sustained for **2 consecutive weeks**  
+> - **500 stars** on the repository  
+> 
+> If these milestones are not all reached, the project will still transition to an open source license after a reasonable period of time...
+> 
+> The goal is not to restrict the project long-term, but to ensure it reaches a stable and high-quality state before opening it to the community.
+
 OpenStudy is an AI-powered study assistant that runs in your terminal. It is built as an OpenCode-inspired TUI for asking study questions, selecting a subject, choosing a model, adjusting reasoning effort, attaching study material, and working in a preferred study language without leaving the command line.
 
 The project is currently focused on a local-first CLI experience using React, Ink, TypeScript, and the Codex SDK.
