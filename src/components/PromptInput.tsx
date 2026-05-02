@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import type { CommandContext, CommandModule } from '../commands/index.js';
 import type { ModalTrigger } from '../modals/index.js';
+import { isTerminalMouseReport } from '../utils/input.js';
 
 const ACCENT_WIDTH = 1;
 const INPUT_PADDING_X = 2;
@@ -120,6 +121,8 @@ export const PromptInput: React.FC<PromptInputProps> = ({
   }, [modalTriggers]);
 
   useInput((input, key) => {
+    if (isTerminalMouseReport(input)) return;
+
     if (menuVisible && menuItems.length > 0 && (key.upArrow || (key.ctrl && input === 'p'))) {
       setSelectedIndex(current => (current - 1 + menuItems.length) % menuItems.length);
       return;

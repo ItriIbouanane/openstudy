@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
+import { isTerminalMouseReport } from '../utils/input.js';
 
 interface ApiKeyInputProps {
   providerLabel: string;
@@ -11,6 +12,8 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ providerLabel, onSubmi
   const [error, setError]  = React.useState('');
 
   useInput((input, key) => {
+    if (isTerminalMouseReport(input)) return;
+
     if (key.return) {
       if (value.trim().length === 0) {
         setError('API key cannot be empty.');

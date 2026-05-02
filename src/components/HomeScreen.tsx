@@ -3,9 +3,11 @@ import path from 'path';
 import { Box, Text, useInput, useStdout } from 'ink';
 import { Logo } from './Logo.js';
 import { PromptInput } from './PromptInput.js';
+import { SessionScreen } from './SessionScreen.js';
 import { loadCommands, type CommandContext, type CommandModule } from '../commands/index.js';
 import { subjects, type SubjectOption } from '../options/index.js';
 import { loadSession, UpdateSettings } from '../utils/config.js';
+import { isTerminalMouseReport } from '../utils/input.js';
 import { PROVIDERS, type Provider } from '../types/index.js';
 import { ModalHost, loadModalManifests, loadModalModule, type ActiveModal, type ModalRenderContext, type ModalState, type ModalTrigger, type SelectedModel } from '../modals/index.js';
 import { getProviderDefinition } from '../providers/index.js';
@@ -45,6 +47,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   }));
   const [commands, setCommands] = React.useState<CommandModule[]>([]);
   const [session, setSession] = React.useState(() => loadSession());
+  const [sessionPrompt, setSessionPrompt] = React.useState<string | null>(null);
   const [modal, setModal] = React.useState<ActiveModal | null>(null);
   const [modalTriggers, setModalTriggers] = React.useState<ModalTrigger[]>([]);
   const modalContextRef = React.useRef<ModalRenderContext | null>(null);
@@ -64,6 +67,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
 
     const providerLabel = getProviderDefinition(selectedModel.provider)?.label ?? selectedModel.provider;
     return `${providerLabel}/${selectedModel.name}`;
+  }, [selectedModel]);
+  const selectedProviderLabel = React.useMemo(() => {
+    if (!selectedModel) return 'Provider';
+    return getProviderDefinition(selectedModel.provider)?.label ?? selectedModel.provider;
   }, [selectedModel]);
   const materialLabel = React.useMemo(() => formatMaterialLabel(session.material), [session.material]);
   const config = React.useMemo(
@@ -196,6 +203,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
 
   useInput((input, key) => {
     if (inputDisabled) return;
+    if (isTerminalMouseReport(input)) return;
 
     if (modal) {
       const handled = modal.module.handleInput?.({ input, key, modal: modal.state, context: modalRenderContext }) ?? false;
@@ -221,7 +229,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
 
   const handleSubmit = (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed.startsWith('/')) return;
+    if (!trimmed.startsWith('/')) {
+      if (hasCompleteSessionOptions(session, selectedSubject, selectedModel)) setSessionPrompt(trimmed);
+      return;
+    }
 
     const name = trimmed.slice(1).split(/\s+/, 1)[0];
     const command = commands.find(item => item.config.name === name);
@@ -255,6 +266,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   // Logo = 6 rows, gap = 2, compact input box = 3, hints = 1, gap = 2, tip = 1 → ~15
   const contentHeight = 16;
   const topPad = Math.max(2, Math.floor((termHeight - contentHeight) / 2));
+
+  if (sessionPrompt) {
+    return (
+      <SessionScreen
+        termWidth={termWidth}
+        termHeight={termHeight}
+        prompt={sessionPrompt}
+        subject={selectedSubject?.name ?? 'Subject'}
+        subjectColor={selectedSubject?.color ?? '#3b82f6'}
+        provider={selectedProviderLabel}
+        model={selectedModel?.name ?? selectedModelLabel}
+        reasoningEffort={session.reasoningEffort}
+        material={materialLabel}
+        studyLanguage={session.studyLanguage}
+        cwd={cwd}
+      />
+    );
+  }
 
   return (
     <Box
@@ -330,6 +359,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
     </Box>
   );
 };
+
+function hasCompleteSessionOptions(
+  session: ReturnType<typeof loadSession>,
+  selectedSubject: SubjectOption | null,
+  selectedModel: SelectedModel | null,
+) {
+  return Boolean(
+    selectedSubject
+    && selectedModel
+    && session.reasoningEffort !== 'Reasoning effort'
+    && session.material !== 'Material'
+    && session.studyLanguage !== 'Study Language'
+  );
+}
 
 function formatMaterialLabel(material: string) {
   if (!material || material === 'Material') return material;

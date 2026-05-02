@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import { createRequire } from 'module';
-import { Codex, type ApprovalMode, type Input, type ModelReasoningEffort, type SandboxMode, type ThreadEvent, type ThreadOptions, type WebSearchMode } from '@openai/codex-sdk';
-import type { AIProvider, ProviderModelOption, ProviderPromptOptions, ProviderPromptResult, ProviderReasoningLevel } from './types.js';
+import { Codex, type ApprovalMode, type Input, type ModelReasoningEffort, type SandboxMode, type ThreadEvent, type ThreadOptions, type TurnOptions, type WebSearchMode } from '@openai/codex-sdk';
+import type { AIProvider, ProviderModelOption, ProviderPromptFile, ProviderPromptOptions, ProviderPromptResult, ProviderReasoningLevel } from './types.js';
 
 const require = createRequire(import.meta.url);
 const CODEX_CLI_PATH = path.join(path.dirname(require.resolve('@openai/codex/package.json')), 'bin', 'codex.js');
@@ -52,7 +52,7 @@ const DEFAULT_THREAD_OPTIONS: Required<Pick<ThreadOptions,
 
 export const CODEX_LOGIN_REQUIRED_MESSAGE = [
   'Codex is not logged in on this machine.',
-  'Fuck off out of this program and run `codex login` in a terminal window, then come back.',
+  'Please exit this program and run `codex login` in a terminal window, then come back.',
 ].join(' ');
 
 export interface CodexPromptOptions extends ProviderPromptOptions {
@@ -100,7 +100,7 @@ export class CodexProvider implements AIProvider {
     const thread = this.createThread(client, options);
 
     try {
-      const result = await thread.run(input, { signal: options.signal });
+      const result = await thread.run(this.promptInput(input, options), this.turnOptions(options));
 
       return {
         text: result.finalResponse,
@@ -119,7 +119,7 @@ export class CodexProvider implements AIProvider {
     const thread = this.createThread(client, options);
 
     try {
-      const { events } = await thread.runStreamed(input, { signal: options.signal });
+      const { events } = await thread.runStreamed(this.promptInput(input, options), this.turnOptions(options));
 
       for await (const event of events) {
         yield event;
@@ -153,6 +153,29 @@ export class CodexProvider implements AIProvider {
       networkAccessEnabled: options.networkAccessEnabled ?? DEFAULT_THREAD_OPTIONS.networkAccessEnabled,
       webSearchMode: options.webSearchMode ?? DEFAULT_THREAD_OPTIONS.webSearchMode,
     };
+  }
+
+  private turnOptions(options: CodexPromptOptions): TurnOptions {
+    return {
+      signal: options.signal,
+      outputSchema: options.responseSchema,
+    };
+  }
+
+  private promptInput(input: Input, options: CodexPromptOptions): Input {
+    const files = this.promptFiles(options);
+    if (files.length === 0) return input;
+
+    const fileInputs = files.map(file => ({ type: 'local_image' as const, path: file.path }));
+    if (typeof input === 'string') return [{ type: 'text', text: input }, ...fileInputs];
+
+    return [...input, ...fileInputs];
+  }
+
+  private promptFiles(options: CodexPromptOptions): Array<{ path: string }> {
+    const files = [options.file, ...(options.files ?? [])].filter((file): file is ProviderPromptFile => Boolean(file));
+
+    return files.map(file => typeof file === 'string' ? { path: file } : file);
   }
 
   private normalizeError(error: unknown): Error {

@@ -1,8 +1,15 @@
+export type ProviderPromptFile = string | {
+  path: string;
+};
+
 export interface ProviderPromptOptions {
   model?: string;
   threadId?: string;
   workingDirectory?: string;
   signal?: AbortSignal;
+  file?: ProviderPromptFile;
+  files?: ProviderPromptFile[];
+  responseSchema?: unknown;
 }
 
 export interface ProviderPromptResult {

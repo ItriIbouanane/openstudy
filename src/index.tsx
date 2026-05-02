@@ -11,6 +11,8 @@ type Screen = 'home' | 'setup';
 
 const MIN_LOADING_MS = 350;
 const FIRST_LAUNCH_LOADING_MS = 4000;
+const ANSI_ENABLE_MOUSE_POINTER = '\x1b[?1000h\x1b[?1006h';
+const ANSI_DISABLE_MOUSE_POINTER = '\x1b[?1000l\x1b[?1006l';
 
 const App: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   const [screen, setScreen] = React.useState<Screen>('home');
@@ -42,19 +44,21 @@ const App: React.FC<{ onExit: () => void }> = ({ onExit }) => {
     return () => clearTimeout(id);
   }, [homeReady, loading, preloadReady]);
 
-  if (screen === 'setup') {
-    return <SetupScreen onExit={onExit} />;
-  }
-
   return (
     <>
-      <HomeScreen
-        onExit={onExit}
-        onSetup={() => setScreen('setup')}
-        onReady={() => setHomeReady(true)}
-        inputDisabled={loading}
-      />
-      {loading && <LoadingScreen firstLaunch={firstLaunch.current} preloadReady={preloadReady} />}
+      {screen === 'setup' ? (
+        <SetupScreen onExit={onExit} />
+      ) : (
+        <>
+          <HomeScreen
+            onExit={onExit}
+            onSetup={() => setScreen('setup')}
+            onReady={() => setHomeReady(true)}
+            inputDisabled={loading}
+          />
+          {loading && <LoadingScreen firstLaunch={firstLaunch.current} preloadReady={preloadReady} />}
+        </>
+      )}
     </>
   );
 };
@@ -69,6 +73,26 @@ function isFirstLaunch() {
   }
 }
 
-const { unmount } = render(<App onExit={() => unmount()} />, {
+function enableDefaultMousePointer() {
+  process.stdout.write(ANSI_ENABLE_MOUSE_POINTER);
+}
+
+function restoreMousePointer() {
+  process.stdout.write(ANSI_DISABLE_MOUSE_POINTER);
+}
+
+enableDefaultMousePointer();
+
+let unmountApp: (() => void) | undefined;
+
+const { unmount } = render(<App onExit={() => {
+  unmountApp?.();
+  restoreMousePointer();
+}} />, {
   alternateScreen: true,
+  onRender: enableDefaultMousePointer,
 });
+
+unmountApp = unmount;
+
+process.on('exit', restoreMousePointer);
