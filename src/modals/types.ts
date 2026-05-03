@@ -29,6 +29,7 @@ export interface ModalTrigger {
 
 export interface ModalContext {
   session: SessionSettings;
+  activeSessionId: string | null;
   config: Config | null;
   selectedSubject: SubjectOption | null;
   selectedModel: SelectedModel | null;

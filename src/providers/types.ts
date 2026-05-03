@@ -3,19 +3,20 @@ export type ProviderPromptFile = string | {
 };
 
 export interface ProviderPromptOptions {
+  system?: string;
   model?: string;
   threadId?: string;
   workingDirectory?: string;
   signal?: AbortSignal;
+  reasoningEffort?: string;
   file?: ProviderPromptFile;
   files?: ProviderPromptFile[];
   responseSchema?: unknown;
 }
 
-export interface ProviderPromptResult {
+export interface ProviderPromptStreamEvent {
+  type: 'status' | 'response';
   text: string;
-  threadId: string | null;
-  raw: unknown;
 }
 
 export interface ProviderReasoningLevel {
@@ -34,11 +35,9 @@ export interface ProviderModelOption {
 export interface AIProvider {
   id: string;
   label: string;
-  login(): Promise<void>;
-  CheckAuth(): Promise<boolean>;
-  GetModelsList(): string[];
-  GetModelOptions(): ProviderModelOption[];
-  prompt(input: string, options?: ProviderPromptOptions): Promise<ProviderPromptResult>;
+  CheckLoginStatus(): Promise<boolean>;
+  GetModels(): ProviderModelOption[];
+  Prompt(input: string, options?: ProviderPromptOptions): AsyncGenerator<ProviderPromptStreamEvent>;
 }
 
 export type ProviderConstructor<TProvider extends AIProvider = AIProvider> = new () => TProvider;

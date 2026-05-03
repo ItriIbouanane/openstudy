@@ -9,6 +9,9 @@ const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 const SESSION_FILE = path.join(CONFIG_DIR, 'session.json');
 
 const DEFAULT_SESSION: SessionSettings = {
+  sessionId: null,
+  title: null,
+  summaryText: null,
   provider: null,
   apiKey: '',
   subject: subjects.find(subject => subject.default)?.name ?? subjects[0]?.name ?? 'General',
@@ -36,6 +39,9 @@ function normalizeSession(value: unknown): SessionSettings {
     : DEFAULT_SESSION.subject;
 
   return {
+    sessionId: null,
+    title: null,
+    summaryText: null,
     provider: isProvider(raw.provider) ? raw.provider : DEFAULT_SESSION.provider,
     apiKey: typeof raw.apiKey === 'string' ? raw.apiKey : DEFAULT_SESSION.apiKey,
     subject,
@@ -86,7 +92,12 @@ export function loadSession(): SessionSettings {
 
 export function saveSession(session: SessionSettings): void {
   ensureConfigDir();
-  fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2), 'utf8');
+  fs.writeFileSync(SESSION_FILE, JSON.stringify({
+    ...session,
+    sessionId: null,
+    title: null,
+    summaryText: null,
+  }, null, 2), 'utf8');
 }
 
 export function updateSettings(patch: Partial<SessionSettings>): SessionSettings {
@@ -117,3 +128,4 @@ export function saveConfig(config: Config): void {
 }
 
 export { CONFIG_FILE, CONFIG_DIR, SESSION_FILE };
+export { DEFAULT_SESSION };

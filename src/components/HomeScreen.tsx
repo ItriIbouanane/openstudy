@@ -7,6 +7,7 @@ import { SessionScreen } from './SessionScreen.js';
 import { loadCommands, type CommandContext, type CommandModule } from '../commands/index.js';
 import { subjects, type SubjectOption } from '../options/index.js';
 import { loadSession, UpdateSettings } from '../utils/config.js';
+import { CreateSession } from '../utils/index.js';
 import { isTerminalMouseReport } from '../utils/input.js';
 import { PROVIDERS, type Provider } from '../types/index.js';
 import { ModalHost, loadModalManifests, loadModalModule, type ActiveModal, type ModalManifest, type ModalRenderContext, type ModalScreen, type ModalState, type ModalTrigger, type SelectedModel } from '../modals/index.js';
@@ -48,6 +49,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   const [commands, setCommands] = React.useState<CommandModule[]>([]);
   const [session, setSession] = React.useState(() => loadSession());
   const [sessionPrompt, setSessionPrompt] = React.useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = React.useState<string | null>(null);
   const [modal, setModal] = React.useState<ActiveModal | null>(null);
   const [modalManifests, setModalManifests] = React.useState<ModalManifest[]>([]);
   const modalContextRef = React.useRef<ModalRenderContext | null>(null);
@@ -191,6 +193,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
 
   const modalRenderContext = React.useMemo<ModalRenderContext>(() => ({
     session,
+    activeSessionId,
     config,
     selectedSubject,
     selectedModel,
@@ -199,7 +202,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
     updateModal,
     updateSettings: updateSession,
     isProviderConfigured,
-  }), [closeModal, config, isProviderConfigured, openModal, selectedModel, selectedSubject, session, updateModal, updateSession]);
+  }), [activeSessionId, closeModal, config, isProviderConfigured, openModal, selectedModel, selectedSubject, session, updateModal, updateSession]);
   modalContextRef.current = modalRenderContext;
 
   const executeModalTrigger = React.useCallback((trigger: ModalTrigger) => {
@@ -236,7 +239,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   const handleSubmit = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed.startsWith('/')) {
-      if (hasCompleteSessionOptions(session, selectedSubject, selectedModel)) setSessionPrompt(trimmed);
+      if (hasCompleteSessionOptions(session, selectedSubject, selectedModel)) {
+        const createdSession = CreateSession({ ...session, title: null, summaryText: null });
+        setActiveSessionId(createdSession.sessionId);
+        setSessionPrompt(trimmed);
+      }
       return;
     }
 
@@ -281,11 +288,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
         prompt={sessionPrompt}
         subject={selectedSubject?.name ?? 'Subject'}
         subjectColor={selectedSubject?.color ?? '#3b82f6'}
+        modelProvider={selectedModel?.provider ?? null}
         provider={selectedProviderLabel}
         model={selectedModel?.name ?? selectedModelLabel}
         reasoningEffort={session.reasoningEffort}
         material={materialLabel}
+        materialPath={session.material}
         studyLanguage={session.studyLanguage}
+        sessionId={activeSessionId}
         cwd={cwd}
         commands={commands}
         commandContext={commandContext}

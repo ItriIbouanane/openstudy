@@ -2,6 +2,7 @@ import fs from 'fs';
 import React from 'react';
 import { Box, Text } from 'ink';
 import { CONFIG_DIR } from '../utils/config.js';
+import { getSessionById } from '../utils/index.js';
 import { createHandleInput, isBackspace, isCancel, isPlainTextInput, isSubmit } from './input.js';
 import type { ModalContext, ModalInputProps, ModalRenderProps, ModalState } from './types.js';
 
@@ -218,7 +219,8 @@ function handleOptionsInput(
     if (!option || option.disabled) return;
 
     if (option.id === 'session') {
-      context.updateModal({ id: 'devtools', layer: 'session', scroll: 0, lines: JSON.stringify(context.session, null, 2).split('\n') });
+      const session = context.activeSessionId ? getSessionById(context.activeSessionId) ?? context.session : context.session;
+      context.updateModal({ id: 'devtools', layer: 'session', scroll: 0, lines: JSON.stringify(session, null, 2).split('\n') });
     }
 
     if (option.id === 'erase') {

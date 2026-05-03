@@ -5,6 +5,7 @@ import { render } from 'ink';
 import { HomeScreen, LoadingScreen, SetupScreen } from './components/index.js';
 import { loadCommands } from './commands/index.js';
 import { loadModalManifests } from './modals/index.js';
+import { closeProviders } from './providers/index.js';
 import { CONFIG_DIR } from './utils/config.js';
 
 type Screen = 'home' | 'setup';
@@ -105,6 +106,7 @@ function shutdownApp() {
   if (shuttingDown) return;
 
   shuttingDown = true;
+  void closeProviders();
   unmountApp?.();
   restoreMousePointer();
 }

@@ -368,7 +368,7 @@ function getProviderModelOptions(provider: Provider): ProviderModelOption[] {
   const instance = createProvider(provider);
   if (!instance) return [];
 
-  return instance.GetModelOptions();
+  return instance.GetModels();
 }
 
 function getProviderLabel(provider: Provider): string {
@@ -384,7 +384,7 @@ async function checkProviderAuth(providers: ModelProviderDefinition[]): Promise<
     }
 
     try {
-      await instance.CheckAuth();
+      await instance.CheckLoginStatus();
       return [provider.id, { state: 'ready' }] as const;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

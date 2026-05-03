@@ -18,6 +18,9 @@ export interface Config {
 }
 
 export interface SessionSettings {
+  sessionId: string | null;
+  title: string | null;
+  summaryText: string | null;
   provider: Provider | null;
   apiKey: string;
   subject: string;

@@ -1,7 +1,7 @@
-export { CodexProvider, CODEX_LOGIN_REQUIRED_MESSAGE, CODEX_MODEL_OPTIONS, CODEX_MODELS, type CodexPromptOptions } from './codex.js';
-export type { AIProvider, ProviderConstructor, ProviderDefinition, ProviderModelOption, ProviderPromptOptions, ProviderPromptResult, ProviderReasoningLevel } from './types.js';
+export { CodexProvider, CODEX_LOGIN_REQUIRED_MESSAGE, CODEX_MODEL_OPTIONS, CODEX_MODELS, closeCodexProvider, type CodexPromptOptions } from './codex.js';
+export type { AIProvider, ProviderConstructor, ProviderDefinition, ProviderModelOption, ProviderPromptOptions, ProviderReasoningLevel } from './types.js';
 
-import { CodexProvider } from './codex.js';
+import { closeCodexProvider, CodexProvider } from './codex.js';
 import type { AIProvider, ProviderDefinition } from './types.js';
 
 const providerDefinitions = [
@@ -32,4 +32,8 @@ export function createProvider(id: string): AIProvider | null;
 export function createProvider(id: string): AIProvider | null {
   const definition = getProviderDefinition(id);
   return definition ? new definition.Provider() : null;
+}
+
+export async function closeProviders() {
+  await closeCodexProvider();
 }

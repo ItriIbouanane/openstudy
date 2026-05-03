@@ -19,7 +19,7 @@ export function open(context: ModalContext): ModalState {
   }
 
   const provider = createProvider(selectedModel.provider);
-  const modelOption = provider?.GetModelOptions().find(option => option.model === selectedModel.name) ?? null;
+  const modelOption = provider?.GetModels().find(option => option.model === selectedModel.name) ?? null;
 
   if (!provider || !modelOption) {
     return { id: 'reasoning', selected: 0, levels: [], error: 'Selected model is unavailable.' };
