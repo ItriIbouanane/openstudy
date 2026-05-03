@@ -9,6 +9,7 @@ export type {
   ModalManifest,
   ModalModule,
   ModalRenderContext,
+  ModalScreen,
   ModalState,
   ModalTrigger,
   SelectedModel,

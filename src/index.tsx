@@ -12,7 +12,8 @@ type Screen = 'home' | 'setup';
 const MIN_LOADING_MS = 350;
 const FIRST_LAUNCH_LOADING_MS = 4000;
 const ANSI_ENABLE_MOUSE_POINTER = '\x1b[?1000h\x1b[?1006h';
-const ANSI_DISABLE_MOUSE_POINTER = '\x1b[?1000l\x1b[?1006l';
+// Clear the common mouse-tracking modes so a stale session cannot leave the terminal stuck.
+const ANSI_DISABLE_MOUSE_POINTER = '\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1005l\x1b[?1006l\x1b[?1015l\x1b[?1007l';
 
 const App: React.FC<{ onExit: () => void }> = ({ onExit }) => {
   const [screen, setScreen] = React.useState<Screen>('home');
@@ -73,26 +74,74 @@ function isFirstLaunch() {
   }
 }
 
+function writeTerminal(sequence: string) {
+  if (!process.stdout.isTTY || !process.stdout.writable) return;
+
+  try {
+    process.stdout.write(sequence);
+  } catch {
+    // Ignore terminal write failures during shutdown.
+  }
+}
+
+let mousePointerEnabled = false;
+let shuttingDown = false;
+
 function enableDefaultMousePointer() {
-  process.stdout.write(ANSI_ENABLE_MOUSE_POINTER);
+  if (mousePointerEnabled || shuttingDown) return;
+
+  writeTerminal(ANSI_ENABLE_MOUSE_POINTER);
+  mousePointerEnabled = true;
 }
 
 function restoreMousePointer() {
-  process.stdout.write(ANSI_DISABLE_MOUSE_POINTER);
+  writeTerminal(ANSI_DISABLE_MOUSE_POINTER);
+  mousePointerEnabled = false;
 }
-
-enableDefaultMousePointer();
 
 let unmountApp: (() => void) | undefined;
 
-const { unmount } = render(<App onExit={() => {
+function shutdownApp() {
+  if (shuttingDown) return;
+
+  shuttingDown = true;
   unmountApp?.();
   restoreMousePointer();
+}
+
+function exitApp(code: number) {
+  shutdownApp();
+  process.exit(code);
+}
+
+function registerProcessHandlers() {
+  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
+    process.once(signal, () => exitApp(0));
+  }
+
+  process.once('uncaughtException', error => {
+    shutdownApp();
+    throw error;
+  });
+
+  process.once('unhandledRejection', error => {
+    shutdownApp();
+    throw error;
+  });
+
+  process.once('beforeExit', restoreMousePointer);
+  process.once('exit', restoreMousePointer);
+}
+
+// Reset any stale mouse-tracking mode before Ink takes over the terminal.
+restoreMousePointer();
+registerProcessHandlers();
+
+const { unmount } = render(<App onExit={() => {
+  shutdownApp();
 }} />, {
   alternateScreen: true,
   onRender: enableDefaultMousePointer,
 });
 
 unmountApp = unmount;
-
-process.on('exit', restoreMousePointer);

@@ -9,7 +9,7 @@ import { subjects, type SubjectOption } from '../options/index.js';
 import { loadSession, UpdateSettings } from '../utils/config.js';
 import { isTerminalMouseReport } from '../utils/input.js';
 import { PROVIDERS, type Provider } from '../types/index.js';
-import { ModalHost, loadModalManifests, loadModalModule, type ActiveModal, type ModalRenderContext, type ModalState, type ModalTrigger, type SelectedModel } from '../modals/index.js';
+import { ModalHost, loadModalManifests, loadModalModule, type ActiveModal, type ModalManifest, type ModalRenderContext, type ModalScreen, type ModalState, type ModalTrigger, type SelectedModel } from '../modals/index.js';
 import { getProviderDefinition } from '../providers/index.js';
 
 const VERSION = '0.1.0';
@@ -49,8 +49,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   const [session, setSession] = React.useState(() => loadSession());
   const [sessionPrompt, setSessionPrompt] = React.useState<string | null>(null);
   const [modal, setModal] = React.useState<ActiveModal | null>(null);
-  const [modalTriggers, setModalTriggers] = React.useState<ModalTrigger[]>([]);
+  const [modalManifests, setModalManifests] = React.useState<ModalManifest[]>([]);
   const modalContextRef = React.useRef<ModalRenderContext | null>(null);
+  const currentScreen: ModalScreen = sessionPrompt ? 'session' : 'home';
   const selectedSubject = React.useMemo<SubjectOption | null>(
     () => subjects.find(subject => subject.name === session.subject) ?? subjects.find(subject => subject.default) ?? null,
     [session.subject],
@@ -109,10 +110,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
 
     void loadModalManifests()
       .then(manifests => {
-        if (mounted) setModalTriggers(manifests.flatMap(item => item.trigger ? [item.trigger] : []));
+        if (mounted) setModalManifests(manifests);
       })
       .catch(() => {
-        if (mounted) setModalTriggers([]);
+        if (mounted) setModalManifests([]);
       });
 
     return () => {
@@ -162,6 +163,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
     setModal(null);
   }, []);
 
+  const availableModalTriggers = React.useMemo(
+    () => modalManifests.flatMap(manifest => isModalAvailableOnScreen(manifest, currentScreen) && manifest.trigger ? [manifest.trigger] : []),
+    [currentScreen, modalManifests],
+  );
+
   const updateModal = React.useCallback((updater: ModalState | ((current: ModalState) => ModalState)) => {
     setModal(current => {
       if (!current) return current;
@@ -171,15 +177,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   }, []);
 
   const openModal = React.useCallback(async (id: string, initialState?: Record<string, unknown>) => {
+    const manifests = modalManifests.length > 0 ? modalManifests : await loadModalManifests();
+    const manifest = manifests.find(item => item.id === id);
     const module = await loadModalModule(id);
     const context = modalContextRef.current;
-    if (!module || !context) return;
+    if (!manifest || !isModalAvailableOnScreen(manifest, currentScreen) || !module || !context) return;
 
     const state = await module.open(context, initialState);
     if (!state) return;
 
     setModal({ id, module, state });
-  }, []);
+  }, [currentScreen, modalManifests]);
 
   const modalRenderContext = React.useMemo<ModalRenderContext>(() => ({
     session,
@@ -195,11 +203,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   modalContextRef.current = modalRenderContext;
 
   const executeModalTrigger = React.useCallback((trigger: ModalTrigger) => {
-    void loadModalManifests().then(manifests => {
-      const manifest = manifests.find(item => item.trigger?.id === trigger.id);
-      if (manifest) void openModal(manifest.id);
-    });
-  }, [openModal]);
+    const manifest = modalManifests.find(item => item.trigger?.id === trigger.id);
+    if (manifest) void openModal(manifest.id);
+  }, [modalManifests, openModal]);
 
   useInput((input, key) => {
     if (inputDisabled) return;
@@ -281,6 +287,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
         material={materialLabel}
         studyLanguage={session.studyLanguage}
         cwd={cwd}
+        commands={commands}
+        commandContext={commandContext}
+        inputActive={!modal && !inputDisabled}
+        modal={modal}
+        modalContext={modalRenderContext}
+        modalTriggers={availableModalTriggers}
+        onModalTrigger={executeModalTrigger}
       />
     );
   }
@@ -307,7 +320,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
           commandContext={commandContext}
           width={promptWidth}
           inputActive={!modal && !inputDisabled}
-          modalTriggers={modalTriggers}
+          modalTriggers={availableModalTriggers}
           onModalTrigger={executeModalTrigger}
           placeholder={`Not sure what to ask ? Just say Hi and ${selectedModelLabel} will guide you`}
           subject={selectedSubject?.name ?? 'Subject'}
@@ -389,4 +402,8 @@ function formatMaterialLabel(material: string) {
 
 function truncateMaterialLabel(label: string) {
   return label.length > 50 ? `${label.slice(0, 47)}...` : label;
+}
+
+function isModalAvailableOnScreen(manifest: ModalManifest, screen: ModalScreen) {
+  return manifest.Screen === null || manifest.Screen === screen;
 }

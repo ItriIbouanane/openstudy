@@ -25,6 +25,7 @@ interface PromptInputProps {
   reasoningEffort?: string;
   material?: string;
   studyLanguage?: string;
+  showContextRow?: boolean;
 }
 
 export const PromptInput: React.FC<PromptInputProps> = ({
@@ -42,6 +43,7 @@ export const PromptInput: React.FC<PromptInputProps> = ({
   reasoningEffort = 'Reasoning effort',
   material = 'Material',
   studyLanguage = 'Study Language',
+  showContextRow = true,
 }) => {
   const [value, setValue] = React.useState('');
   const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -282,17 +284,19 @@ export const PromptInput: React.FC<PromptInputProps> = ({
             )}
           </Box>
 
-          <Box flexDirection="row">
-            <Text color={subjectColor} bold>{subject}</Text>
-            <Text color="#3a3a3a"> · </Text>
-            <Text color="#888888">{model}</Text>
-            <Text color="#3a3a3a"> · </Text>
-            <Text color="#f0a500" bold>{reasoningEffort}</Text>
-            <Text color="#3a3a3a"> · </Text>
-            <Text color="#888888">{material}</Text>
-            <Text color="#3a3a3a"> · </Text>
-            <Text color="#888888">{studyLanguage}</Text>
-          </Box>
+          {showContextRow && (
+            <Box flexDirection="row">
+              <Text color={subjectColor} bold>{subject}</Text>
+              <Text color="#3a3a3a"> · </Text>
+              <Text color="#888888">{model}</Text>
+              <Text color="#3a3a3a"> · </Text>
+              <Text color="#f0a500" bold>{reasoningEffort}</Text>
+              <Text color="#3a3a3a"> · </Text>
+              <Text color="#888888">{material}</Text>
+              <Text color="#3a3a3a"> · </Text>
+              <Text color="#888888">{studyLanguage}</Text>
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>

@@ -8,6 +8,8 @@ export interface SelectedModel {
   name: string;
 }
 
+export type ModalScreen = 'home' | 'session';
+
 export interface ModalState {
   id: string;
   [key: string]: unknown;
@@ -45,6 +47,7 @@ export interface ModalModule {
 
 export interface ModalManifest {
   id: string;
+  Screen: ModalScreen | null;
   trigger?: ModalTrigger;
   load: () => Promise<ModalModule>;
 }

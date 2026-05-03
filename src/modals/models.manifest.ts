@@ -2,6 +2,7 @@ import type { ModalManifest } from './types.js';
 
 export const manifest: ModalManifest = {
   id: 'models',
+  Screen: 'home',
   trigger: {
     id: 'models',
     key: 'ctrl+m',

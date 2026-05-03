@@ -1,12 +1,13 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
+import type { CommandContext, CommandModule } from '../commands/index.js';
+import { ModalHost, type ActiveModal, type ModalRenderContext, type ModalTrigger } from '../modals/index.js';
+import { PromptInput } from './PromptInput.js';
 import { isTerminalMouseReport } from '../utils/input.js';
 
 const SIDEBAR_WIDTH = 42;
 const WIDE_TERMINAL_BREAKPOINT = 120;
 const VERSION = '0.1.0';
-const INPUT_PADDING_X = 2;
-const MAX_VISIBLE_INPUT_LINES = 5;
 const SESSION_MODES = [
   { label: 'Summary', Component: SummaryMode },
   { label: 'Quiz', Component: QuizMode },
@@ -22,9 +23,6 @@ const THEME = {
   textMuted: '#808080',
   background: '#0a0a0a',
   backgroundPanel: '#141414',
-  backgroundElement: '#1e1e1e',
-  border: '#484848',
-  borderActive: '#606060',
 };
 
 interface SessionScreenProps {
@@ -39,6 +37,13 @@ interface SessionScreenProps {
   material: string;
   studyLanguage: string;
   cwd: string;
+  commands: CommandModule[];
+  commandContext: CommandContext;
+  inputActive: boolean;
+  modal: ActiveModal | null;
+  modalContext: ModalRenderContext;
+  modalTriggers: ModalTrigger[];
+  onModalTrigger: (trigger: ModalTrigger) => void;
 }
 
 export const SessionScreen: React.FC<SessionScreenProps> = ({
@@ -53,37 +58,19 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   material,
   studyLanguage,
   cwd,
+  commands,
+  commandContext,
+  inputActive,
+  modal,
+  modalContext,
+  modalTriggers,
+  onModalTrigger,
 }) => {
-  const [value, setValue] = React.useState('');
-  const [cursorVisible, setCursorVisible] = React.useState(true);
   const [activeModeIndex, setActiveModeIndex] = React.useState(0);
   const sidebarVisible = termWidth > WIDE_TERMINAL_BREAKPOINT;
   const contentWidth = Math.max(1, termWidth - (sidebarVisible ? SIDEBAR_WIDTH : 0) - 4);
-  const inputContentWidth = Math.max(1, contentWidth - 1 - INPUT_PADDING_X * 2);
   const title = truncate(prompt, 50);
   const ActiveMode = SESSION_MODES[activeModeIndex]?.Component ?? SummaryMode;
-  const isPlaceholder = value.length === 0;
-  const cursor = cursorVisible ? '█' : ' ';
-  const placeholder = 'Ask anything...';
-  const placeholderCursor = cursorVisible ? cursor : placeholder[0] ?? ' ';
-  const visibleInputLines = React.useMemo(() => {
-    if (isPlaceholder) return [];
-
-    const lines = wrapLines(value, inputContentWidth);
-    const lastLine = lines[lines.length - 1] ?? '';
-
-    if (value.length > 0 && lastLine.length === inputContentWidth) {
-      lines.push('');
-    }
-
-    return lines.slice(-MAX_VISIBLE_INPUT_LINES);
-  }, [inputContentWidth, isPlaceholder, value]);
-  const inputPanelHeight = Math.max(3, visibleInputLines.length + 2);
-
-  React.useEffect(() => {
-    const id = setInterval(() => setCursorVisible(visible => !visible), 530);
-    return () => clearInterval(id);
-  }, []);
 
   useInput((input, key) => {
     if (isTerminalMouseReport(input)) return;
@@ -92,24 +79,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
       setActiveModeIndex(current => (current + 1) % SESSION_MODES.length);
       return;
     }
-
-    if (key.return) {
-      const trimmed = value.trim();
-      if (trimmed) {
-        setValue('');
-      }
-      return;
-    }
-
-    if (key.backspace || key.delete) {
-      setValue(current => current.slice(0, -1));
-      return;
-    }
-
-    if (key.ctrl || key.meta || key.escape || key.tab) return;
-
-    setValue(current => current + input);
-  });
+  }, { isActive: inputActive });
 
   return (
     <Box flexDirection="row" width={termWidth} height={termHeight} backgroundColor={THEME.background}>
@@ -121,30 +91,23 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         </Box>
 
         <Box flexShrink={0} flexDirection="column" width={contentWidth}>
-          <Box flexDirection="row" minHeight={inputPanelHeight}>
-            <Box width={1} minHeight={inputPanelHeight} backgroundColor={subjectColor} />
-            <Box flexGrow={1} backgroundColor={THEME.backgroundElement} paddingX={2} paddingY={1}>
-              <Box minHeight={1} flexDirection="column">
-                {isPlaceholder ? (
-                  <Text>
-                    <Text color={cursorVisible ? THEME.text : THEME.textMuted}>{placeholderCursor}</Text>
-                    <Text color={THEME.textMuted}>{placeholder.slice(1)}</Text>
-                  </Text>
-                ) : (
-                  visibleInputLines.map((line, index) => {
-                    const isLastLine = index === visibleInputLines.length - 1;
-
-                    return (
-                      <Text key={`${index}:${line}`}>
-                        <Text color={THEME.text}>{line}</Text>
-                        {isLastLine && <Text color={THEME.text}>{cursor}</Text>}
-                      </Text>
-                    );
-                  })
-                )}
-              </Box>
-            </Box>
-          </Box>
+          <PromptInput
+            onSubmit={() => undefined}
+            commands={commands}
+            commandContext={commandContext}
+            width={contentWidth}
+            inputActive={inputActive}
+            modalTriggers={modalTriggers}
+            onModalTrigger={onModalTrigger}
+            placeholder="Ask anything..."
+            subject={subject}
+            subjectColor={subjectColor}
+            model={model}
+            reasoningEffort={reasoningEffort}
+            material={material}
+            studyLanguage={studyLanguage}
+            showContextRow={false}
+          />
 
           <Box flexDirection="row" justifyContent="space-between">
             <Text color={THEME.textMuted}>{' '}</Text>
@@ -203,6 +166,8 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
           </Box>
         </Box>
       )}
+
+      {modal && <ModalHost modal={modal} termWidth={termWidth} termHeight={termHeight} context={modalContext} />}
     </Box>
   );
 };
@@ -251,17 +216,6 @@ function SidebarRow({ label, value, valueColor = THEME.text }: { label: string; 
       <Text color={valueColor}>{truncate(value, 22)}</Text>
     </Box>
   );
-}
-
-function wrapLines(text: string, lineWidth: number) {
-  if (!text) return [''];
-
-  const lines: string[] = [];
-  for (let index = 0; index < text.length; index += lineWidth) {
-    lines.push(text.slice(index, index + lineWidth));
-  }
-
-  return lines.length > 0 ? lines : [''];
 }
 
 function truncate(value: string, maxLength: number) {

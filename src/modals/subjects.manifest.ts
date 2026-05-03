@@ -2,6 +2,7 @@ import type { ModalManifest } from './types.js';
 
 export const manifest: ModalManifest = {
   id: 'subjects',
+  Screen: 'home',
   trigger: {
     id: 'subjects',
     key: 'tab',
