@@ -12,6 +12,8 @@ const DEFAULT_SESSION: SessionSettings = {
   sessionId: null,
   title: null,
   summaryText: null,
+  createdDate: null,
+  lastOpenedDate: null,
   provider: null,
   apiKey: '',
   subject: subjects.find(subject => subject.default)?.name ?? subjects[0]?.name ?? 'General',
@@ -42,6 +44,8 @@ function normalizeSession(value: unknown): SessionSettings {
     sessionId: null,
     title: null,
     summaryText: null,
+    createdDate: typeof raw.createdDate === 'string' ? raw.createdDate : null,
+    lastOpenedDate: typeof raw.lastOpenedDate === 'string' ? raw.lastOpenedDate : null,
     provider: isProvider(raw.provider) ? raw.provider : DEFAULT_SESSION.provider,
     apiKey: typeof raw.apiKey === 'string' ? raw.apiKey : DEFAULT_SESSION.apiKey,
     subject,
@@ -71,9 +75,10 @@ export function loadSession(): SessionSettings {
 
   if (!fs.existsSync(SESSION_FILE)) {
     const legacyConfig = readConfigFile();
+    const now = new Date().toISOString();
     const session = legacyConfig
-      ? { ...DEFAULT_SESSION, provider: legacyConfig.provider, apiKey: legacyConfig.apiKey }
-      : DEFAULT_SESSION;
+      ? { ...DEFAULT_SESSION, provider: legacyConfig.provider, apiKey: legacyConfig.apiKey, createdDate: now, lastOpenedDate: now }
+      : { ...DEFAULT_SESSION, createdDate: now, lastOpenedDate: now };
 
     saveSession(session);
     return session;
@@ -81,12 +86,19 @@ export function loadSession(): SessionSettings {
 
   try {
     const raw = fs.readFileSync(SESSION_FILE, 'utf8');
-    const session = normalizeSession(JSON.parse(raw));
+    const now = new Date().toISOString();
+    const normalizedSession = normalizeSession(JSON.parse(raw));
+    const session = {
+      ...normalizedSession,
+      lastOpenedDate: now,
+    };
     saveSession(session);
     return session;
   } catch {
-    saveSession(DEFAULT_SESSION);
-    return DEFAULT_SESSION;
+    const now = new Date().toISOString();
+    const session = { ...DEFAULT_SESSION, createdDate: now, lastOpenedDate: now };
+    saveSession(session);
+    return session;
   }
 }
 

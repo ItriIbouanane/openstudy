@@ -15,6 +15,7 @@ const CODEX_CLI_PATH = (() => {
 })();
 
 const DEFAULT_MODEL = 'gpt-5.3-codex';
+const DEFAULT_APPROVAL_POLICY = 'never';
 const DEFAULT_REASONING_LEVELS = [
   { id: 'minimal', label: 'Minimal', value: 'minimal' },
   { id: 'low', label: 'Low', value: 'low' },
@@ -41,13 +42,17 @@ export const CODEX_LOGIN_REQUIRED_MESSAGE = [
 
 const codexAppServer = createCodexAppServer({
   defaultSettings: {
-    approvalPolicy: 'on-failure',
+    // Avoid app-server approval events for study requests until the upstream
+    // provider fixes malformed tool approval metadata.
+    approvalPolicy: DEFAULT_APPROVAL_POLICY,
+    autoApprove: true,
     sandboxPolicy: 'read-only',
     personality: 'none',
     logger: false,
     minCodexVersion: '0.105.0',
   },
 });
+
 
 export interface CodexPromptOptions extends ProviderPromptOptions {
   approvalPolicy?: 'untrusted' | 'on-failure' | 'on-request' | 'never';
@@ -91,7 +96,7 @@ export class CodexProvider implements AIProvider {
   }
 
   async *Prompt(input: string, options: CodexPromptOptions = {}): AsyncGenerator<ProviderPromptStreamEvent> {
-    yield { type: 'status', text: 'Checking Codex login' };
+    yield { type: 'status', text: 'Checking login' };
     await this.CheckLoginStatus();
 
     const files = [options.file, ...(options.files ?? [])]
@@ -121,12 +126,12 @@ export class CodexProvider implements AIProvider {
         ].join('\n');
 
     if (options.responseSchema) {
-      yield { type: 'status', text: 'Starting Codex session' };
+      yield { type: 'status', text: 'Starting session' };
 
       const result = streamText({
         model: codexAppServer(options.model ?? DEFAULT_MODEL, {
           cwd: workingDirectory,
-          approvalPolicy: options.approvalPolicy ?? 'on-failure',
+          approvalPolicy: options.approvalPolicy ?? DEFAULT_APPROVAL_POLICY,
           sandboxPolicy: options.sandboxMode ?? 'read-only',
           effort: reasoningEffort,
         }),
@@ -161,12 +166,12 @@ export class CodexProvider implements AIProvider {
       return;
     }
 
-    yield { type: 'status', text: 'Starting Codex session' };
+    yield { type: 'status', text: 'Starting session' };
 
     const result = streamText({
       model: codexAppServer(options.model ?? DEFAULT_MODEL, {
         cwd: workingDirectory,
-        approvalPolicy: options.approvalPolicy ?? 'on-failure',
+        approvalPolicy: options.approvalPolicy ?? DEFAULT_APPROVAL_POLICY,
         sandboxPolicy: options.sandboxMode ?? 'read-only',
         effort: reasoningEffort,
       }),

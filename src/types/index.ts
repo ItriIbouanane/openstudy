@@ -1,5 +1,6 @@
 export type Provider =
   | 'codex'
+  | 'opencode'
   | 'openai'
   | 'anthropic'
   | 'google'
@@ -21,6 +22,8 @@ export interface SessionSettings {
   sessionId: string | null;
   title: string | null;
   summaryText: string | null;
+  createdDate: string | null;
+  lastOpenedDate: string | null;
   provider: Provider | null;
   apiKey: string;
   subject: string;
@@ -33,4 +36,5 @@ export interface SessionSettings {
 
 export const PROVIDERS: ProviderMeta[] = [
   { id: 'codex', label: 'Codex', requiresKey: false },
+  { id: 'opencode', label: 'OpenCode', requiresKey: false },
 ];

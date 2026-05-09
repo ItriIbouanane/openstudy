@@ -398,13 +398,27 @@ function readDirectory(directory: string): FilePickerModalState {
         (entry.isDirectory() && !entry.name.startsWith('.')) ||
         (entry.isFile() && isDocumentFile(entry.name))
       ))
-      .map(entry => ({
-        name: entry.name,
-        path: path.join(cwd, entry.name),
-        type: entry.isDirectory() ? 'directory' as const : 'file' as const,
-      }))
+      .map(entry => {
+        const entryPath = path.join(cwd, entry.name);
+        let mtime: number | undefined;
+        try { mtime = fs.statSync(entryPath).mtimeMs; } catch { /* ignore stat errors */ }
+        return {
+          name: entry.name,
+          path: entryPath,
+          type: entry.isDirectory() ? 'directory' as const : 'file' as const,
+          mtime,
+        };
+      })
       .sort((a, b) => {
         if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+        if (a.mtime !== undefined && b.mtime !== undefined) {
+          const mtimeSort = b.mtime - a.mtime;
+          if (mtimeSort !== 0) return mtimeSort;
+        } else if (a.mtime !== undefined) {
+          return -1;
+        } else if (b.mtime !== undefined) {
+          return 1;
+        }
         return a.name.localeCompare(b.name);
       });
 

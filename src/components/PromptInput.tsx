@@ -26,6 +26,7 @@ interface PromptInputProps {
   material?: string;
   studyLanguage?: string;
   showContextRow?: boolean;
+  onMenuVisibleChange?: (visible: boolean) => void;
 }
 
 export const PromptInput: React.FC<PromptInputProps> = ({
@@ -44,6 +45,7 @@ export const PromptInput: React.FC<PromptInputProps> = ({
   material = 'Material',
   studyLanguage = 'Study Language',
   showContextRow = true,
+  onMenuVisibleChange,
 }) => {
   const [value, setValue] = React.useState('');
   const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -86,6 +88,10 @@ export const PromptInput: React.FC<PromptInputProps> = ({
       .map(item => item.command);
   }, [commandQuery, commands]);
   const menuVisible = slashEligible && !menuDismissed;
+
+  React.useEffect(() => {
+    onMenuVisibleChange?.(menuVisible);
+  }, [menuVisible, onMenuVisibleChange]);
   const menuItems = menuVisible ? suggestions : [];
   const menuRowCount = Math.max(1, menuItems.length);
   const menuTop = -menuRowCount;
@@ -177,6 +183,7 @@ export const PromptInput: React.FC<PromptInputProps> = ({
       setValue(current => current.slice(0, -1));
       return;
     }
+    if (key.upArrow || key.downArrow || key.leftArrow || key.rightArrow || key.pageUp || key.pageDown || key.home || key.end) return;
     if (key.ctrl || key.meta || key.escape || key.tab) return;
     setValue(current => current + input);
   }, { isActive: inputActive });

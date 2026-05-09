@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import type { SessionSettings } from '../types/index.js';
-import { CONFIG_DIR, DEFAULT_SESSION, loadSession } from './config.js';
+import { CONFIG_DIR, DEFAULT_SESSION, loadSession, saveSession } from './config.js';
 
 const SESSION_FILENAME = 'session.json';
 
@@ -15,6 +15,8 @@ function normalizeStoredSession(value: unknown, fallbackSessionId: string | null
     sessionId: typeof raw.sessionId === 'string' && raw.sessionId.trim().length > 0 ? raw.sessionId : fallbackSessionId,
     title: typeof raw.title === 'string' && raw.title.trim().length > 0 ? raw.title : null,
     summaryText: typeof raw.summaryText === 'string' ? raw.summaryText : null,
+    createdDate: typeof raw.createdDate === 'string' ? raw.createdDate : null,
+    lastOpenedDate: typeof raw.lastOpenedDate === 'string' ? raw.lastOpenedDate : null,
   };
 }
 
@@ -68,6 +70,7 @@ export function saveSessionById(sessionId: string, session: SessionSettings): Se
 export function CreateSession(session: SessionSettings = DEFAULT_SESSION): SessionSettings {
   const homeSession = loadSession();
   const sessionId = randomUUID();
+  const now = new Date().toISOString();
 
   return saveSessionById(sessionId, {
     ...DEFAULT_SESSION,
@@ -76,5 +79,18 @@ export function CreateSession(session: SessionSettings = DEFAULT_SESSION): Sessi
     sessionId,
     title: null,
     summaryText: null,
+    createdDate: now,
+    lastOpenedDate: now,
   });
+}
+
+export function SetSession(sessionId: string): SessionSettings | null {
+  const session = getSessionById(sessionId);
+  if (!session) return null;
+
+  const now = new Date().toISOString();
+  const updated = saveSessionById(sessionId, { ...session, lastOpenedDate: now });
+
+  saveSession(updated);
+  return updated;
 }

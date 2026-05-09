@@ -1,7 +1,9 @@
 export { CodexProvider, CODEX_LOGIN_REQUIRED_MESSAGE, CODEX_MODEL_OPTIONS, CODEX_MODELS, closeCodexProvider, type CodexPromptOptions } from './codex.js';
+export { OpenCodeProvider, OPENCODE_LOGIN_REQUIRED_MESSAGE, OPENCODE_MODEL_OPTIONS, OPENCODE_MODELS, closeOpenCodeProvider } from './opencode.js';
 export type { AIProvider, ProviderConstructor, ProviderDefinition, ProviderModelOption, ProviderPromptOptions, ProviderReasoningLevel } from './types.js';
 
 import { closeCodexProvider, CodexProvider } from './codex.js';
+import { closeOpenCodeProvider, OpenCodeProvider } from './opencode.js';
 import type { AIProvider, ProviderDefinition } from './types.js';
 
 const providerDefinitions = [
@@ -11,12 +13,19 @@ const providerDefinitions = [
     requiresKey: false,
     Provider: CodexProvider,
   },
+  {
+    id: 'opencode',
+    label: 'OpenCode',
+    requiresKey: false,
+    Provider: OpenCodeProvider,
+  },
 ] as const satisfies readonly ProviderDefinition[];
 
 export type ProviderId = typeof providerDefinitions[number]['id'];
 
 export const providers = {
   codex: new CodexProvider(),
+  opencode: new OpenCodeProvider(),
 } as const;
 
 export function getAvailableProviders(): ProviderDefinition[] {
@@ -36,4 +45,5 @@ export function createProvider(id: string): AIProvider | null {
 
 export async function closeProviders() {
   await closeCodexProvider();
+  await closeOpenCodeProvider();
 }

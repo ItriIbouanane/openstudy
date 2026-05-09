@@ -7,9 +7,9 @@ import { SessionScreen } from './SessionScreen.js';
 import { loadCommands, type CommandContext, type CommandModule } from '../commands/index.js';
 import { subjects, type SubjectOption } from '../options/index.js';
 import { loadSession, UpdateSettings } from '../utils/config.js';
-import { CreateSession } from '../utils/index.js';
+import { CreateSession, SetSession } from '../utils/index.js';
 import { isTerminalMouseReport } from '../utils/input.js';
-import { PROVIDERS, type Provider } from '../types/index.js';
+import { PROVIDERS, type Provider, type SessionSettings } from '../types/index.js';
 import { ModalHost, loadModalManifests, loadModalModule, type ActiveModal, type ModalManifest, type ModalRenderContext, type ModalScreen, type ModalState, type ModalTrigger, type SelectedModel } from '../modals/index.js';
 import { getProviderDefinition } from '../providers/index.js';
 
@@ -84,6 +84,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
   const updateSession = React.useCallback((patch: Partial<typeof session>) => {
     const next = UpdateSettings(patch);
     setSession(next);
+    return next;
+  }, []);
+
+  const activateSession = React.useCallback((sessionId: string) => {
+    const next = SetSession(sessionId);
+    if (!next) return null;
+
+    setSession(next);
+    setActiveSessionId(next.sessionId ?? sessionId);
+    setSessionPrompt(getSessionPromptTitle(next));
     return next;
   }, []);
 
@@ -201,8 +211,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onExit, onSetup, onReady
     closeModal,
     updateModal,
     updateSettings: updateSession,
+    setSession: activateSession,
     isProviderConfigured,
-  }), [activeSessionId, closeModal, config, isProviderConfigured, openModal, selectedModel, selectedSubject, session, updateModal, updateSession]);
+  }), [activateSession, activeSessionId, closeModal, config, isProviderConfigured, openModal, selectedModel, selectedSubject, session, updateModal, updateSession]);
   modalContextRef.current = modalRenderContext;
 
   const executeModalTrigger = React.useCallback((trigger: ModalTrigger) => {
@@ -408,6 +419,16 @@ function formatMaterialLabel(material: string) {
 
   const label = !parent || parent === '.' || parent === path.sep ? file : `${parent}/${file}`;
   return truncateMaterialLabel(label);
+}
+
+function getSessionPromptTitle(session: SessionSettings) {
+  const trimmedTitle = session.title?.trim();
+  if (trimmedTitle) return trimmedTitle;
+
+  const material = formatMaterialLabel(session.material);
+  if (material && material !== 'Material') return material;
+
+  return 'Study Session';
 }
 
 function truncateMaterialLabel(label: string) {

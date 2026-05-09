@@ -30,6 +30,7 @@ export interface ProviderModelOption {
   label: string;
   model: string;
   reasoningLevels: ProviderReasoningLevel[];
+  group?: { id: string; name: string };
 }
 
 export interface AIProvider {

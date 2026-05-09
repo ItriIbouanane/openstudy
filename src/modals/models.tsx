@@ -15,7 +15,8 @@ type ProviderAuthById = Partial<Record<Provider, ProviderAuthStatus>>;
 
 type ModelsModalState =
   | { id: 'models'; layer: 'providers'; selected: number; auth: ProviderAuthById; authCheckId: string; spinnerFrame: number; error?: string }
-  | { id: 'models'; layer: 'models'; provider: Provider; selected: number; auth: ProviderAuthById; authCheckId: string; spinnerFrame: number }
+  | { id: 'models'; layer: 'subproviders'; provider: Provider; selected: number; auth: ProviderAuthById; authCheckId: string; spinnerFrame: number }
+  | { id: 'models'; layer: 'models'; provider: Provider; subProvider: string | null; selected: number; auth: ProviderAuthById; authCheckId: string; spinnerFrame: number }
   | { id: 'models'; layer: 'setup'; provider: Provider; apiKey: string; auth: ProviderAuthById; authCheckId: string; spinnerFrame: number; error?: string };
 
 export function open(context: ModalContext): ModalState {
@@ -34,8 +35,12 @@ export function open(context: ModalContext): ModalState {
 export function getHeight(modal: ModalState) {
   const state = modal as ModelsModalState;
   if (state.layer === 'providers') return Math.max(1, getModelProviders().length) + 7;
+  if (state.layer === 'subproviders') {
+    const rows = Math.max(1, Math.min(MODEL_MODAL_MAX_ROWS, getSubProviders(getProviderModelOptions(state.provider)).length));
+    return rows + 7;
+  }
   if (state.layer === 'models') {
-    const rows = Math.max(1, Math.min(MODEL_MODAL_MAX_ROWS, getProviderModelOptions(state.provider).length));
+    const rows = Math.max(1, Math.min(MODEL_MODAL_MAX_ROWS, getProviderModelOptions(state.provider, state.subProvider).length));
     return rows + 7;
   }
 
@@ -46,6 +51,7 @@ export function render(props: ModalRenderProps) {
   const state = props.modal as ModelsModalState;
 
   if (state.layer === 'providers') return <ProviderLayer {...props} modal={state} />;
+  if (state.layer === 'subproviders') return <SubProvidersLayer {...props} modal={state} />;
   if (state.layer === 'models') return <ModelsLayer {...props} modal={state} />;
   if (state.layer === 'setup') return <SetupLayer {...props} modal={state} />;
 
@@ -56,6 +62,10 @@ export const handleInput = createHandleInput([
   {
     when: props => isProvidersLayer(props) && isProvidersInput(props),
     run: props => handleProvidersInput(props.key, props.modal as Extract<ModelsModalState, { layer: 'providers' }>, props.context),
+  },
+  {
+    when: props => isSubProvidersLayer(props) && isSubProvidersInput(props),
+    run: props => handleSubProvidersInput(props.key, props.modal as Extract<ModelsModalState, { layer: 'subproviders' }>, props.context),
   },
   {
     when: props => isModelsLayer(props) && isModelsInput(props),
@@ -110,8 +120,48 @@ function ProviderLayer({ modal, context }: ModalRenderProps & { modal: Extract<M
   );
 }
 
+function SubProvidersLayer({ modal, context }: ModalRenderProps & { modal: Extract<ModelsModalState, { layer: 'subproviders' }> }) {
+  const subProviders = getSubProviders(getProviderModelOptions(modal.provider));
+  const subjectColor = context.selectedSubject?.color ?? '#3b82f6';
+  const rows = Math.max(1, Math.min(MODEL_MODAL_MAX_ROWS, subProviders.length));
+  const windowStart = Math.min(
+    Math.max(0, modal.selected - rows + 1),
+    Math.max(0, subProviders.length - rows),
+  );
+  const visibleSubProviders = subProviders.slice(windowStart, windowStart + rows);
+
+  return (
+    <>
+      <Box justifyContent="space-between" marginBottom={1}>
+        <Text color="#f0f0f0" bold>{getProviderLabel(modal.provider)}</Text>
+        <Text color="#777777">esc</Text>
+      </Box>
+      <Box marginBottom={1}>
+        <Text color="#777777">Select a subprovider.</Text>
+      </Box>
+      <Box flexDirection="column" marginBottom={1}>
+        {visibleSubProviders.length === 0 ? (
+          <Text color="#777777">No providers available</Text>
+        ) : visibleSubProviders.map((sp, index) => {
+          const spIndex = windowStart + index;
+          const isSelected = modal.selected === spIndex;
+          return (
+            <Box key={sp.id} backgroundColor={isSelected ? subjectColor : undefined}>
+              <Text color={isSelected ? '#000000' : '#f0f0f0'} bold={isSelected}>{sp.name}</Text>
+            </Box>
+          );
+        })}
+      </Box>
+      <Box justifyContent="space-between">
+        <Text color="#777777">← back  ↑↓ move</Text>
+        <Text color="#777777">enter continue</Text>
+      </Box>
+    </>
+  );
+}
+
 function ModelsLayer({ modal, context }: ModalRenderProps & { modal: Extract<ModelsModalState, { layer: 'models' }> }) {
-  const modelOptions = getProviderModelOptions(modal.provider);
+  const modelOptions = getProviderModelOptions(modal.provider, modal.subProvider);
   const subjectColor = context.selectedSubject?.color ?? '#3b82f6';
   const modelRows = Math.max(1, Math.min(MODEL_MODAL_MAX_ROWS, modelOptions.length));
   const modelWindowStart = Math.min(
@@ -145,7 +195,7 @@ function ModelsLayer({ modal, context }: ModalRenderProps & { modal: Extract<Mod
         })}
       </Box>
       <Box justifyContent="space-between">
-        <Text color="#777777">← providers {modelWindowStart + 1}-{modelWindowStart + visibleModels.length}/{modelOptions.length}</Text>
+        <Text color="#777777">{modal.subProvider ? '← back' : '← providers'} {modelWindowStart + 1}-{modelWindowStart + visibleModels.length}/{modelOptions.length}</Text>
         <Text color="#777777">enter select</Text>
       </Box>
     </>
@@ -178,6 +228,10 @@ function isProvidersLayer({ modal }: ModalInputProps) {
   return (modal as ModelsModalState).layer === 'providers';
 }
 
+function isSubProvidersLayer({ modal }: ModalInputProps) {
+  return (modal as ModelsModalState).layer === 'subproviders';
+}
+
 function isModelsLayer({ modal }: ModalInputProps) {
   return (modal as ModelsModalState).layer === 'models';
 }
@@ -188,6 +242,10 @@ function isSetupLayer({ modal }: ModalInputProps) {
 
 function isProvidersInput(props: ModalInputProps) {
   return isCancel(props) || isSubmit(props) || props.key.upArrow || props.key.downArrow;
+}
+
+function isSubProvidersInput(props: ModalInputProps) {
+  return isCancel(props) || isSubmit(props) || props.key.leftArrow || isBackspace(props) || props.key.upArrow || props.key.downArrow;
 }
 
 function isModelsInput(props: ModalInputProps) {
@@ -238,17 +296,56 @@ function handleProvidersInput(
     }
 
     if (isProviderUsable(provider, context, state.auth)) {
-      openModelsForProvider(provider.id, context, state.auth);
+      openNextForProvider(provider.id, context, state.auth);
       return true;
     }
 
     if (!provider.requiresKey) {
       context.updateSettings({ provider: provider.id, apiKey: '' });
-      openModelsForProvider(provider.id, context, state.auth);
+      openNextForProvider(provider.id, context, state.auth);
       return true;
     }
 
     context.updateModal({ id: 'models', layer: 'setup', provider: provider.id, apiKey: '', auth: state.auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame });
+    return true;
+  }
+
+  return false;
+}
+
+function handleSubProvidersInput(
+  key: ModalInputProps['key'],
+  state: Extract<ModelsModalState, { layer: 'subproviders' }>,
+  context: ModalRenderContext,
+) {
+  const subProviders = getSubProviders(getProviderModelOptions(state.provider));
+  const providerIndex = Math.max(0, getModelProviders().findIndex(p => p.id === state.provider));
+
+  if (key.escape) {
+    context.closeModal();
+    return true;
+  }
+
+  if (key.leftArrow || key.backspace || key.delete) {
+    context.updateModal({ id: 'models', layer: 'providers', selected: providerIndex, auth: state.auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame });
+    return true;
+  }
+
+  if (key.upArrow) {
+    if (subProviders.length === 0) return true;
+    context.updateModal({ ...state, selected: (state.selected - 1 + subProviders.length) % subProviders.length });
+    return true;
+  }
+
+  if (key.downArrow) {
+    if (subProviders.length === 0) return true;
+    context.updateModal({ ...state, selected: (state.selected + 1) % subProviders.length });
+    return true;
+  }
+
+  if (key.return) {
+    const sp = subProviders[state.selected];
+    if (sp) openModelsForProvider(state.provider, sp.id, context, state.auth);
     return true;
   }
 
@@ -261,7 +358,7 @@ function handleModelsInput(
   context: ModalRenderContext,
 ) {
   const providerIndex = Math.max(0, getModelProviders().findIndex(provider => provider.id === state.provider));
-  const modelOptions = getProviderModelOptions(state.provider);
+  const modelOptions = getProviderModelOptions(state.provider, state.subProvider);
 
   if (key.escape) {
     context.closeModal();
@@ -269,7 +366,13 @@ function handleModelsInput(
   }
 
   if (key.leftArrow || key.backspace || key.delete) {
-    context.updateModal({ id: 'models', layer: 'providers', selected: providerIndex, auth: state.auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame });
+    if (state.subProvider !== null) {
+      const subProviders = getSubProviders(getProviderModelOptions(state.provider));
+      const subProviderIndex = Math.max(0, subProviders.findIndex(sp => sp.id === state.subProvider));
+      context.updateModal({ id: 'models', layer: 'subproviders', provider: state.provider, selected: subProviderIndex, auth: state.auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame });
+    } else {
+      context.updateModal({ id: 'models', layer: 'providers', selected: providerIndex, auth: state.auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame });
+    }
     return true;
   }
 
@@ -331,7 +434,7 @@ function handleSetupInput(
     }
 
     context.updateSettings({ provider: state.provider, apiKey });
-    openModelsForProvider(state.provider, context, state.auth);
+    openNextForProvider(state.provider, context, state.auth);
     return true;
   }
 
@@ -348,27 +451,67 @@ function handleSetupInput(
   return false;
 }
 
-function openModelsForProvider(provider: Provider, context: ModalRenderContext, auth: ProviderAuthById) {
-  const currentModels = getProviderModelOptions(provider);
+function openModelsForProvider(provider: Provider, subProvider: string | null, context: ModalRenderContext, auth: ProviderAuthById) {
+  const currentModels = getProviderModelOptions(provider, subProvider);
   const selected = context.selectedModel?.provider === provider
     ? currentModels.findIndex(modelOption => modelOption.model === context.selectedModel?.name)
     : 0;
 
   context.updateModal(current => {
     const state = current as ModelsModalState;
-    return { id: 'models', layer: 'models', provider, selected: Math.max(0, selected), auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame };
+    return { id: 'models', layer: 'models', provider, subProvider, selected: Math.max(0, selected), auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame };
   });
+}
+
+function openSubProvidersForProvider(provider: Provider, context: ModalRenderContext, auth: ProviderAuthById) {
+  const allModels = getProviderModelOptions(provider);
+  const subProviders = getSubProviders(allModels);
+  let selected = 0;
+  if (context.selectedModel?.provider === provider) {
+    const currentSubId = allModels.find(m => m.model === context.selectedModel?.name)?.group?.id;
+    if (currentSubId) {
+      const idx = subProviders.findIndex(sp => sp.id === currentSubId);
+      if (idx >= 0) selected = idx;
+    }
+  }
+
+  context.updateModal(current => {
+    const state = current as ModelsModalState;
+    return { id: 'models', layer: 'subproviders', provider, selected, auth, authCheckId: state.authCheckId, spinnerFrame: state.spinnerFrame };
+  });
+}
+
+function openNextForProvider(provider: Provider, context: ModalRenderContext, auth: ProviderAuthById) {
+  const subProviders = getSubProviders(getProviderModelOptions(provider));
+  if (subProviders.length > 1) {
+    openSubProvidersForProvider(provider, context, auth);
+  } else {
+    openModelsForProvider(provider, null, context, auth);
+  }
 }
 
 function getModelProviders(): ModelProviderDefinition[] {
   return getAvailableProviders() as ModelProviderDefinition[];
 }
 
-function getProviderModelOptions(provider: Provider): ProviderModelOption[] {
+function getProviderModelOptions(provider: Provider, subProvider?: string | null): ProviderModelOption[] {
   const instance = createProvider(provider);
   if (!instance) return [];
+  const models = instance.GetModels();
+  if (!subProvider) return models;
+  return models.filter(m => m.group?.id === subProvider);
+}
 
-  return instance.GetModels();
+function getSubProviders(models: ProviderModelOption[]): { id: string; name: string }[] {
+  const seen = new Set<string>();
+  const result: { id: string; name: string }[] = [];
+  for (const model of models) {
+    if (model.group && !seen.has(model.group.id)) {
+      seen.add(model.group.id);
+      result.push(model.group);
+    }
+  }
+  return result;
 }
 
 function getProviderLabel(provider: Provider): string {

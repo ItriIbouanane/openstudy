@@ -24,9 +24,12 @@
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "dependencies": {
+    "@opencode-ai/sdk": "^1.14.34",
     "ai": "^6.0.174",
     "ai-sdk-provider-codex-cli": "^1.1.0",
     "ink": "^7.0.1",
+    "marked": "^17.0.6",
+    "marked-react": "^4.0.0",
     "react": "^19.2.5"
   },
   "devDependencies": {

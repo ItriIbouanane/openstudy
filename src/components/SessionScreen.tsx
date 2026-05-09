@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
+import { lexer, type Token, type Tokens } from 'marked';
 import type { CommandContext, CommandModule } from '../commands/index.js';
 import { ModalHost, type ActiveModal, type ModalRenderContext, type ModalTrigger } from '../modals/index.js';
 import { createProvider } from '../providers/index.js';
@@ -9,7 +10,7 @@ import { summarySystemPrompt } from '../prompts/summary.js';
 import { PromptInput } from './PromptInput.js';
 import type { Provider } from '../types/index.js';
 import { getSessionById, saveSessionById } from '../utils/index.js';
-import { isTerminalMouseReport } from '../utils/input.js';
+import { isTerminalMouseReport, parseMouseWheelScroll } from '../utils/input.js';
 
 const SIDEBAR_WIDTH = 42;
 const WIDE_TERMINAL_BREAKPOINT = 120;
@@ -42,9 +43,9 @@ const SUMMARY_RESPONSE_SCHEMA = {
 const SUMMARY_LOADING_STEPS = [
   'Checking session inputs',
   'Resolving material path',
-  'Preparing Codex request',
-  'Checking Codex login',
-  'Starting Codex session',
+  'Preparing request',
+  'Checking login',
+  'Starting session',
   'Waiting for structured response',
   'Waiting for response',
   'Analyzing key ideas',
@@ -59,6 +60,8 @@ type SummaryState =
 type SummaryLine = {
   text: string;
   color: string;
+  bold?: boolean;
+  dim?: boolean;
 };
 
 interface SessionScreenProps {
@@ -109,6 +112,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   onModalTrigger,
 }) => {
   const [activeModeIndex, setActiveModeIndex] = React.useState(0);
+  const [commandMenuActive, setCommandMenuActive] = React.useState(false);
   const [summaryState, setSummaryState] = React.useState<SummaryState>(() => {
     const storedSession = sessionId ? getSessionById(sessionId) : null;
     return storedSession?.summaryText
@@ -117,7 +121,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   });
   const sidebarVisible = termWidth > WIDE_TERMINAL_BREAKPOINT;
   const contentWidth = Math.max(1, termWidth - (sidebarVisible ? SIDEBAR_WIDTH : 0) - 4);
-  const title = truncate(prompt, 50);
+  const [title, setTitle] = React.useState(truncate(prompt, 50));
   const contentHeight = Math.max(4, termHeight - 7);
   const ActiveMode = SESSION_MODES[activeModeIndex]?.Component ?? SummaryMode;
 
@@ -130,6 +134,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     const storedSession = getSessionById(sessionId);
     if (storedSession?.summaryText) {
       setSummaryState({ status: 'ready', response: storedSession.summaryText });
+      setTitle(storedSession.title ?? truncate(prompt, 50));
       return;
     }
 
@@ -178,13 +183,13 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
       responseSchema: SUMMARY_RESPONSE_SCHEMA,
     };
 
-    setSummaryState({ status: 'loading', step: 'Preparing Codex request' });
+    setSummaryState({ status: 'loading', step: 'Preparing request' });
 
     const runSummary = async () => {
       try {
         let latestResponse = '';
 
-        setSummaryState({ status: 'loading', step: 'Checking Codex login' });
+        setSummaryState({ status: 'loading', step: 'Checking login' });
 
         for await (const event of selectedProvider.Prompt(buildSummaryUserPrompt(studyLanguage), baseRequestOptions)) {
           if (controller.signal.aborted) return;
@@ -269,7 +274,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
       <Box flexGrow={1} flexDirection="column" paddingLeft={2} paddingRight={2} paddingBottom={1}>
         <Box flexGrow={1} flexDirection="column" width={contentWidth}>
           <Box height={1} flexShrink={0} />
-          <ActiveMode contentWidth={contentWidth} contentHeight={contentHeight} summaryState={summaryState} inputActive={inputActive} />
+          <ActiveMode contentWidth={contentWidth} contentHeight={contentHeight} summaryState={summaryState} inputActive={inputActive} commandMenuActive={commandMenuActive} />
           <Box flexGrow={1} />
         </Box>
 
@@ -290,6 +295,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
             material={material}
             studyLanguage={studyLanguage}
             showContextRow={false}
+            onMenuVisibleChange={setCommandMenuActive}
           />
 
           <Box flexDirection="row" justifyContent="space-between">
@@ -355,17 +361,21 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   );
 };
 
+interface SessionModeProps {
+  contentWidth: number;
+  contentHeight: number;
+  summaryState: SummaryState;
+  inputActive: boolean;
+  commandMenuActive: boolean;
+}
+
 function SummaryMode({
   contentWidth,
   contentHeight,
   summaryState,
   inputActive,
-}: {
-  contentWidth: number;
-  contentHeight: number;
-  summaryState: SummaryState;
-  inputActive: boolean;
-}) {
+  commandMenuActive,
+}: SessionModeProps) {
   const [scroll, setScroll] = React.useState(0);
   const [animationFrame, setAnimationFrame] = React.useState(0);
   const lines = React.useMemo(() => buildSummaryLines(summaryState, Math.max(1, contentWidth), animationFrame), [animationFrame, contentWidth, summaryState]);
@@ -399,6 +409,14 @@ function SummaryMode({
   }, [summaryState.status]);
 
   useInput((input, key) => {
+    const mouseScroll = parseMouseWheelScroll(input);
+    if (mouseScroll !== 0) {
+      if (summaryState.status === 'ready' || summaryState.status === 'streaming') {
+        setScroll(current => Math.max(0, Math.min(maxScroll, current + mouseScroll)));
+      }
+      return;
+    }
+
     if (isTerminalMouseReport(input)) return;
     if (summaryState.status !== 'ready' && summaryState.status !== 'streaming') return;
 
@@ -430,7 +448,7 @@ function SummaryMode({
     if (key.downArrow) {
       setScroll(current => Math.min(maxScroll, current + 1));
     }
-  }, { isActive: inputActive });
+  }, { isActive: inputActive && !commandMenuActive });
 
   return (
     <Box flexDirection="column">
@@ -441,33 +459,77 @@ function SummaryMode({
         </Text>
       </Box>
 
-      <Box flexDirection="column">
-        {visibleLines.map((line, index) => (
-          <Text
-            key={`${scroll + index}:${line.text}`}
-            color={line.color}
-          >
-            {line.text || ' '}
-          </Text>
-        ))}
+      <Box height={visibleRows} flexDirection="row" overflow="hidden">
+        <Box width={Math.max(1, contentWidth - (maxScroll > 0 ? 2 : 0))} flexDirection="column">
+          {visibleLines.map((line, index) => (
+            <Text
+              key={`${scroll + index}:${line.text}`}
+              color={line.color}
+              bold={line.bold}
+              dimColor={line.dim}
+            >
+              {line.text || ' '}
+            </Text>
+          ))}
+        </Box>
+        {maxScroll > 0 && (
+          <ScrollBar
+            height={visibleRows}
+            scroll={scroll}
+            totalRows={lines.length}
+            visibleRows={visibleRows}
+          />
+        )}
       </Box>
     </Box>
   );
 }
 
-function QuizMode() {
+function ScrollBar({
+  height,
+  scroll,
+  totalRows,
+  visibleRows,
+}: {
+  height: number;
+  scroll: number;
+  totalRows: number;
+  visibleRows: number;
+}) {
+  const trackHeight = Math.max(1, height);
+  const thumbHeight = Math.max(1, Math.floor((visibleRows / totalRows) * trackHeight));
+  const maxThumbTop = Math.max(0, trackHeight - thumbHeight);
+  const maxScroll = Math.max(1, totalRows - visibleRows);
+  const thumbTop = Math.min(maxThumbTop, Math.round((scroll / maxScroll) * maxThumbTop));
+
+  return (
+    <Box width={2} flexDirection="column" alignItems="flex-end">
+      {Array.from({ length: trackHeight }, (_, index) => {
+        const active = index >= thumbTop && index < thumbTop + thumbHeight;
+
+        return (
+          <Text key={index} color={active ? THEME.primary : '#303030'}>
+            {active ? '█' : '│'}
+          </Text>
+        );
+      })}
+    </Box>
+  );
+}
+
+function QuizMode(_props: SessionModeProps) {
   return <ModePlaceholder name="Quiz" />;
 }
 
-function FlashCardsMode() {
+function FlashCardsMode(_props: SessionModeProps) {
   return <ModePlaceholder name="FlashCards" />;
 }
 
-function ExercisesMode() {
+function ExercisesMode(_props: SessionModeProps) {
   return <ModePlaceholder name="Exercises" />;
 }
 
-function AiTeacherMode() {
+function AiTeacherMode(_props: SessionModeProps) {
   return <ModePlaceholder name="AI Teacher" />;
 }
 
@@ -502,7 +564,7 @@ function truncate(value: string, maxLength: number) {
 }
 
 function buildSummaryUserPrompt(language: string) {
-  return `Summarize the attached study material into structured study notes.\n\nReturn a JSON object with exactly these fields:\n- SessionTitle: a short session title\n- content: the full summary in Markdown\n\nRequirements for content:\n\nThe summary MUST be written in: ${language}\nFormat the content value in clean Markdown\nUse clear headings (##, ###) and subheadings\nUse bullet points for readability\nKeep all important ideas and concepts\nSimplify explanations where needed\nKeep it concise but complete\nAt the end, add a section called Key Points to Remember\nList the most important facts or ideas to memorize`;
+  return `Summarize the attached study material into structured study notes.\n\nReturn a JSON object with exactly these fields:\n- SessionTitle: a short session title\n- content: the full summary in Markdown\n\nIMPORTANT: Output raw JSON only. Do not wrap in markdown code fences or backticks. Do not include any explanation before or after the JSON object.\n\nRequirements for content:\n\nThe summary MUST be written in: ${language}\nFormat the content value in clean Markdown\nUse clear headings (##, ###) and subheadings\nUse bullet points for readability\nKeep all important ideas and concepts\nSimplify explanations where needed\nKeep it concise but complete\nAt the end, add a section called Key Points to Remember\nList the most important facts or ideas to memorize`;
 }
 
 function buildSummaryLines(summaryState: SummaryState, width: number, animationFrame: number): SummaryLine[] {
@@ -531,10 +593,10 @@ function buildSummaryLines(summaryState: SummaryState, width: number, animationF
   }
 
   if (summaryState.status === 'streaming') {
-    return appendStreamingIndicator(wrapSummaryLine({ text: summaryState.response, color: THEME.text }, width), animationFrame);
+    return appendStreamingIndicator(buildMarkdownSummaryLines(summaryState.response, width), animationFrame);
   }
 
-  return wrapSummaryLine({ text: summaryState.response, color: THEME.text }, width);
+  return buildMarkdownSummaryLines(summaryState.response, width);
 }
 
 function getSummaryStatusLabel(status: SummaryState['status'], maxScroll: number) {
@@ -553,7 +615,221 @@ function wrapSummaryLine(line: SummaryLine, width: number) {
   return wrapText(line.text, width).map(text => ({
     text,
     color: line.color,
+    bold: line.bold,
+    dim: line.dim,
   }));
+}
+
+function buildMarkdownSummaryLines(markdown: string, width: number) {
+  const lines: SummaryLine[] = [];
+
+  try {
+    for (const token of lexer(markdown, { gfm: true })) {
+      appendMarkdownToken(lines, token, width);
+    }
+  } catch {
+    return wrapSummaryLine({ text: markdown, color: THEME.text }, width);
+  }
+
+  return trimBlankSummaryLines(lines).length > 0
+    ? trimBlankSummaryLines(lines)
+    : [{ text: ' ', color: THEME.textMuted }];
+}
+
+function appendMarkdownToken(lines: SummaryLine[], token: Token, width: number) {
+  switch (token.type) {
+    case 'space':
+      appendBlankLine(lines);
+      return;
+
+    case 'heading': {
+      appendBlankLine(lines);
+      const heading = token as Tokens.Heading;
+      const text = inlineText(heading.tokens) || heading.text;
+
+      if (heading.depth === 1) {
+        appendWrappedText(lines, text.toUpperCase(), width, { color: THEME.primary, bold: true });
+        lines.push({ text: '─'.repeat(Math.min(text.length, width)), color: THEME.primary, dim: true });
+      } else if (heading.depth === 2) {
+        appendWrappedText(lines, text, width, { color: THEME.primary, bold: true });
+      } else if (heading.depth === 3) {
+        appendWrappedText(lines, text, width, { color: THEME.primary });
+      } else {
+        appendWrappedText(lines, text, width, { color: THEME.textMuted });
+      }
+      return;
+    }
+
+    case 'paragraph': {
+      const paragraph = token as Tokens.Paragraph;
+      appendWrappedText(lines, inlineText(paragraph.tokens) || paragraph.text, width, { color: THEME.text });
+      return;
+    }
+
+    case 'text': {
+      const text = token as Tokens.Text;
+      appendWrappedText(lines, text.tokens ? inlineText(text.tokens) : text.text, width, { color: THEME.text });
+      return;
+    }
+
+    case 'blockquote': {
+      const quote = token as Tokens.Blockquote;
+      const quoteLines = buildMarkdownLinesFromTokens(quote.tokens, Math.max(1, width - 2));
+      for (const line of quoteLines) {
+        appendWrappedText(lines, `| ${line.text}`, width, { color: THEME.textMuted, dim: true });
+      }
+      return;
+    }
+
+    case 'list':
+      appendList(lines, token as Tokens.List, width);
+      return;
+
+    case 'code':
+      appendCodeBlock(lines, token as Tokens.Code, width);
+      return;
+
+    case 'table':
+      appendTable(lines, token as Tokens.Table, width);
+      return;
+
+    case 'hr':
+      appendWrappedText(lines, '-'.repeat(Math.min(width, 40)), width, { color: THEME.textMuted, dim: true });
+      return;
+
+    case 'html': {
+      const html = token as Tokens.HTML;
+      appendWrappedText(lines, html.text, width, { color: THEME.textMuted, dim: true });
+      return;
+    }
+
+    default:
+      if ('tokens' in token && Array.isArray(token.tokens)) {
+        for (const child of token.tokens) {
+          appendMarkdownToken(lines, child, width);
+        }
+      } else if ('text' in token && typeof token.text === 'string') {
+        appendWrappedText(lines, token.text, width, { color: THEME.text });
+      }
+  }
+}
+
+function buildMarkdownLinesFromTokens(tokens: Token[], width: number) {
+  const lines: SummaryLine[] = [];
+  for (const token of tokens) appendMarkdownToken(lines, token, width);
+  return trimBlankSummaryLines(lines);
+}
+
+function appendList(lines: SummaryLine[], list: Tokens.List, width: number) {
+  const start = typeof list.start === 'number' ? list.start : 1;
+
+  list.items.forEach((item, index) => {
+    const marker = list.ordered ? `${start + index}.` : '-';
+    const checkbox = item.task ? `${item.checked ? '[x]' : '[ ]'} ` : '';
+    const prefix = `${marker} ${checkbox}`;
+    const childLines = buildMarkdownLinesFromTokens(item.tokens, Math.max(1, width - prefix.length));
+
+    if (childLines.length === 0) {
+      appendWrappedText(lines, prefix.trimEnd(), width, { color: THEME.text });
+      return;
+    }
+
+    childLines.forEach((line, childIndex) => {
+      const linePrefix = childIndex === 0 ? prefix : ' '.repeat(prefix.length);
+      appendWrappedText(lines, `${linePrefix}${line.text}`, width, {
+        color: line.color,
+        bold: line.bold,
+        dim: line.dim,
+      });
+    });
+  });
+}
+
+function appendCodeBlock(lines: SummaryLine[], code: Tokens.Code, width: number) {
+  appendBlankLine(lines);
+  if (code.lang) {
+    appendWrappedText(lines, code.lang, width, { color: THEME.textMuted, dim: true });
+  }
+
+  const codeLines = code.text.split('\n');
+  for (const line of codeLines.length > 0 ? codeLines : ['']) {
+    appendWrappedText(lines, line || ' ', width, { color: '#f4c7a1' });
+  }
+  appendBlankLine(lines);
+}
+
+function appendTable(lines: SummaryLine[], table: Tokens.Table, width: number) {
+  const rows = [table.header, ...table.rows];
+  const columnWidths = table.header.map((_, columnIndex) => {
+    const widestCell = rows.reduce((widest, row) => Math.max(widest, inlineText(row[columnIndex]?.tokens ?? []).length), 0);
+    return Math.min(Math.max(1, widestCell), Math.max(1, Math.floor(width / Math.max(1, table.header.length)) - 2));
+  });
+
+  rows.forEach((row, rowIndex) => {
+    const cells = row.map((cell, columnIndex) => truncate(inlineText(cell.tokens), columnWidths[columnIndex] ?? 8).padEnd(columnWidths[columnIndex] ?? 8));
+    appendWrappedText(lines, cells.join('  ').trimEnd(), width, {
+      color: rowIndex === 0 ? THEME.primary : THEME.text,
+      bold: rowIndex === 0,
+    });
+  });
+}
+
+function appendWrappedText(lines: SummaryLine[], text: string, width: number, style: Omit<SummaryLine, 'text'>) {
+  for (const wrapped of wrapText(text, width)) {
+    lines.push({ text: wrapped, ...style });
+  }
+}
+
+function appendBlankLine(lines: SummaryLine[]) {
+  const previous = lines[lines.length - 1];
+  if (!previous || previous.text === '') return;
+  lines.push({ text: '', color: THEME.textMuted });
+}
+
+function trimBlankSummaryLines(lines: SummaryLine[]) {
+  let start = 0;
+  let end = lines.length;
+
+  while (start < end && lines[start]?.text === '') start += 1;
+  while (end > start && lines[end - 1]?.text === '') end -= 1;
+
+  return lines.slice(start, end);
+}
+
+function inlineText(tokens: Token[]): string {
+  return tokens.map(token => {
+    switch (token.type) {
+      case 'text':
+      case 'escape':
+      case 'codespan':
+      case 'html':
+        return 'text' in token && typeof token.text === 'string' ? token.text : '';
+
+      case 'strong':
+      case 'em':
+      case 'del':
+        return inlineText((token as Tokens.Strong | Tokens.Em | Tokens.Del).tokens);
+
+      case 'link': {
+        const link = token as Tokens.Link;
+        const label = inlineText(link.tokens) || link.text;
+        return link.href ? `${label} (${link.href})` : label;
+      }
+
+      case 'image': {
+        const image = token as Tokens.Image;
+        return image.href ? `${image.text || 'image'} (${image.href})` : image.text;
+      }
+
+      case 'br':
+        return '\n';
+
+      default:
+        if ('tokens' in token && Array.isArray(token.tokens)) return inlineText(token.tokens);
+        if ('text' in token && typeof token.text === 'string') return token.text;
+        return '';
+    }
+  }).join('');
 }
 
 function appendStreamingIndicator(lines: SummaryLine[], animationFrame: number) {
@@ -574,8 +850,13 @@ function appendStreamingIndicator(lines: SummaryLine[], animationFrame: number) 
 }
 
 function parseSummaryPayload(response: string): { SessionTitle: string; content: string } | null {
-  const normalizedResponse = response.trim();
+  let normalizedResponse = response.trim();
   if (!normalizedResponse) return null;
+
+  // Strip complete markdown code fences (```json ... ```) if the model added them despite instructions.
+  // Partial/incomplete fences during streaming won't match the closing fence so fall through safely.
+  const fenceMatch = /^```(?:json)?\s*([\s\S]*?)\s*```$/u.exec(normalizedResponse);
+  if (fenceMatch?.[1]) normalizedResponse = fenceMatch[1].trim();
 
   try {
     const parsed = JSON.parse(normalizedResponse) as unknown;

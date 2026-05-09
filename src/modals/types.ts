@@ -37,6 +37,7 @@ export interface ModalContext {
   closeModal: () => void;
   updateModal: (updater: ModalState | ((current: ModalState) => ModalState)) => void;
   updateSettings: (patch: Partial<SessionSettings>) => SessionSettings;
+  setSession: (sessionId: string) => SessionSettings | null;
 }
 
 export interface ModalModule {
